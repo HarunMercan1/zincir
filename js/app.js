@@ -45,3 +45,8 @@ let startTab = 'chain';
 try { startTab = localStorage.getItem('zincir-tab') || 'chain'; } catch (e) {}
 show(startTab);
 setInterval(updateStatus, 30000);
+
+// ana ekrana eklenebilir / çevrimdışı (sadece http(s) üzerinden; dosyadan açınca atlanır)
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
