@@ -6,7 +6,7 @@
 <title>Zinciri Kırma</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=6">
+<link rel="stylesheet" href="css/style.css?v=7">
 </head>
 <body>
 <nav class="nav">
@@ -15,21 +15,24 @@
     <button data-tab="chain"><span>⛓</span>Zincir</button>
     <button data-tab="log"><span>🏋️</span>Antrenman</button>
     <button data-tab="stats"><span>📊</span>İstatistik</button>
+    <button data-tab="ach"><span>🏆</span>Başarım</button>
   </div>
-  <div class="pill">🔥 <b id="pill">0</b></div>
+  <div class="pills"><button class="pill lvl-pill" data-tab="ach" id="lvlPill"></button><div class="pill">🔥 <b id="pill">0</b></div></div>
 </nav>
 <div class="demo" id="demo" hidden>DEMO modu: örnek veri gösteriliyor, hiçbir şey kaydedilmez. <a href="./">Gerçek verime dön</a></div>
 <main>
   <section id="tab-chain"></section>
   <section id="tab-log" hidden></section>
   <section id="tab-stats" hidden></section>
+  <section id="tab-ach" hidden></section>
 </main>
 <div id="toast" class="toast"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script src="js/data.js?v=6"></script>
-<script src="js/chain.js?v=6"></script>
-<script src="js/log.js?v=6"></script>
-<script src="js/stats.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
+<script src="js/data.js?v=7"></script>
+<script src="js/chain.js?v=7"></script>
+<script src="js/log.js?v=7"></script>
+<script src="js/stats.js?v=7"></script>
+<script src="js/gamify.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
 </body>
 </html>

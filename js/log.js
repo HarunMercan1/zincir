@@ -171,16 +171,23 @@ function saveSet(el, v) {
   v = v ?? parseInt(el.querySelector('#val').value, 10);
   if (!(v > 0)) { toast('Önce bir değer gir'); return; }
   const best = bestEver(id, null), wasDone = doneCount(d);
+  const x0 = xpInfo(), a0 = ACH.map(a => achState(a).lvl);
   Store.addSet(d, id, v);
   const i = Store.sets(d, id).length - 1;
+  const x1 = xpInfo(), gain = x1.xp - x0.xp;
+  const newAch = ACH.map((a, k) => ({a, l: achState(a).lvl, k})).filter(o => o.l > a0[o.k]);
   Log.val = suggest(id, d);
   if (d === today()) { Log.rest = Date.now() + Log.restLen * 1000; }
   renderLog(el);
   el.querySelector('.entry').classList.add('flash');
-  document.getElementById('pill').textContent = streakInfo().cur;
-  if (v > best && best > 0) { toast(`🏆 YENİ REKOR! ${EXM[id].name}: ${v} ${EXM[id].unit}`, {label: 'Geri al', fn: undo}); confetti(); }
-  else if (doneCount(d) === 5 && wasDone < 5) { toast('⛓ 5/5! Bugünün halkası altın oldu.', {label: 'Geri al', fn: undo}); confetti(); }
-  else toast(`✓ ${i + 1}. set kaydedildi: ${v} ${EXM[id].unit}`, {label: 'Geri al', fn: undo});
+  updatePills();
+  floatXP(el.querySelector('#save'), gain);
+  const xpT = gain ? ` <b class="xp-t">+${gain} XP</b>` : '';
+  if (x1.L > x0.L) { toast(`⬆ SEVİYE ${x1.L}! ${x1.tier[1]}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
+  else if (newAch.length) { const o = newAch[0]; toast(`${o.a.ic} Başarım: ${o.a.name} · ${TIERS[o.l - 1]}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
+  else if (v > best && best > 0) { toast(`🏆 YENİ REKOR! ${EXM[id].name}: ${v} ${EXM[id].unit}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
+  else if (doneCount(d) === 5 && wasDone < 5) { toast(`⛓ 5/5! Bugünün halkası altın oldu.${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
+  else toast(`✓ ${i + 1}. set kaydedildi: ${v} ${EXM[id].unit}${xpT}`, {label: 'Geri al', fn: undo});
   function undo() { Store.removeSet(d, id, i); Log.rest = null; Log.val = v; renderLog(el); }
 }
 
@@ -235,6 +242,14 @@ function beep(f, dur) {
     o.frequency.value = f; g.gain.value = .08; o.connect(g); g.connect(audioCtx.destination);
     o.start(); o.stop(audioCtx.currentTime + dur);
   } catch (e) {}
+}
+
+function floatXP(anchor, gain) {
+  if (!gain || !anchor) return;
+  const r = anchor.getBoundingClientRect(), f = document.createElement('div');
+  f.className = 'xp-float'; f.textContent = `+${gain} XP`;
+  f.style.left = (r.left + r.width / 2) + 'px'; f.style.top = (r.top) + 'px';
+  document.body.appendChild(f); setTimeout(() => f.remove(), 1300);
 }
 
 function confetti() {
