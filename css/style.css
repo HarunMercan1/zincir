@@ -309,6 +309,15 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .setchips span{display:flex;align-items:center;gap:6px;font-size:12px;background:var(--card2);border-radius:99px;padding:4px 10px;border:1px solid color-mix(in srgb,var(--sc) 40%,transparent)}
 .setchips i{width:10px;height:10px;border-radius:50%;background:var(--sc)}
 .chips i{box-shadow:inset 0 -3px 0 var(--sc,transparent)}
+.htbl td{text-align:center;font-weight:600;border-radius:0}
+.htbl td:first-child{text-align:left}
+.htbl td small{font-weight:400}
+.tbl tr.cur td{background:#ffffff08;border-top:1px solid var(--line)}
+.tbl tr.cur td:first-child{box-shadow:inset 3px 0 0 var(--fire2)}
+.tbl .gold{color:#ffd166}
+.tbl th:first-child{position:sticky;left:0;background:#0f121b}
+.tbl td:first-child{position:sticky;left:0;background:#0f121b}
+.h280{height:280px}.h240{height:240px}
 .vs-h{display:grid;grid-template-columns:30px 1fr 1fr 70px;gap:10px;font-weight:700;margin-bottom:8px}
 .vs-h span:first-child{grid-column:2}
 .vs-h small{color:var(--mute);font-weight:400}

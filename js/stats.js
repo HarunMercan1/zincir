@@ -116,6 +116,7 @@ function renderOverview(el) {
     <div><h2>Haftanın günleri</h2><div class="card ch h260"><div class="chi"><canvas id="cWd"></canvas></div></div></div>
     <div><h2>Haftalık hacim</h2><div class="card ch h260"><div class="chi"><canvas id="cWeek"></canvas></div></div></div>
   </div>
+  ${ovExtraHTML()}
   <h2>Aktivite haritası</h2>
   <div class="card"><div class="heat" id="heat"></div>
     <div class="hleg">Az <i class="hc"></i><i class="hc l1"></i><i class="hc l2"></i><i class="hc l3"></i><i class="hc l4"></i><i class="hc l5"></i> Çok · renk = o gün kaç hareket yapıldı</div></div>`;
@@ -156,6 +157,7 @@ function renderOverview(el) {
     options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {beginAtZero: true}}}});
 
   renderHeat(el.querySelector('#heat'));
+  ovExtraCharts();
 }
 
 function grad(ctx, color) {
@@ -282,6 +284,8 @@ function renderExStats(el, e) {
   <h2>İlk antrenman vs son antrenman</h2>
   <div class="card vs" style="--c:${e.color}">${vsHTML(e, done[0], done[done.length - 1])}${ongoing ? '<p class="muted" style="margin-top:8px;font-size:12px">Bugünkü antrenman devam ettiği için son tamamlanan antrenmanla karşılaştırıldı.</p>' : ''}</div>
 
+  ${exExtraHTML(e, s)}
+
   <h2>Antrenman geçmişi</h2>
   <div class="card tbl-wrap"><table class="tbl" style="--c:${e.color}">
     <thead><tr><th>Tarih</th><th>Setler</th><th>Toplam</th><th>Öncekine göre</th><th>En iyi set</th><th>Yorgunluk</th></tr></thead>
@@ -330,6 +334,7 @@ function renderExStats(el, e) {
   chart('cHist', {type: 'bar', data: {labels: hb.map(b => bw > 1 ? `${b}–${b + bw - 1}` : `${b}`), datasets: [{label: 'Set sayısı', data: hb.map(b => all.filter(v => v >= b && v < b + bw).length),
     backgroundColor: hb.map((_, i) => alpha(e.color, .35 + .65 * i / Math.max(1, hb.length - 1))), borderRadius: 4}]},
     options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}, title: {display: true, text: e.unit}}, y: {beginAtZero: true, ticks: {precision: 0}, title: {display: true, text: 'set sayısı'}}}}});
+  exExtraCharts(e, s);
 }
 
 function tile(v, l, sub = '', cls = '') { return `<div class="tile ${cls}"><b>${v}</b><span>${l}</span>${sub ? `<small>${sub}</small>` : ''}</div>`; }
