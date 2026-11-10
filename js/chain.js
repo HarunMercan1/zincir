@@ -143,6 +143,9 @@ function renderChainTab(el) {
   for (let d = new Date(t + 'T12:00:00'); ymd(d) >= start.slice(0, 8) + '01'; d.setMonth(d.getMonth() - 1, 1)) months.push(new Date(d));
   el.querySelector('#cal').innerHTML = months.map(m => calMonth(m)).join('');
 
+  el.insertAdjacentHTML('beforeend', '<h2>Veri ve yedek</h2><div id="backup"></div>');
+  renderBackup(el.querySelector('#backup'));
+
   const sc = el.querySelector('#chainScroll'); sc.scrollLeft = sc.scrollWidth;
   el.querySelectorAll('[data-d]').forEach(n => n.addEventListener('click', () => openDay(n.dataset.d)));
   updateStatus();

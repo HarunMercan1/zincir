@@ -379,5 +379,18 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 @keyframes xpup{to{transform:translate(-50%,-90px);opacity:0}}
 .xp-t{color:var(--fire2)}
 
+/* yedek */
+.bk{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.bk.warn{border-color:#7a4a1c;background:linear-gradient(90deg,#2a1606,#0f121b 70%)}
+.bk-info{display:flex;gap:14px;align-items:flex-start;flex:1;min-width:260px}
+.bk-ic{font-size:30px}
+.bk-info b{display:block}
+.bk-info small{color:var(--mute);font-size:13px}
+.bk-info small b{display:inline;color:var(--text)}
+.bk-btns{display:flex;gap:8px;flex-wrap:wrap}
+.bk-dl,.bk-ul{padding:11px 18px;border-radius:12px;font-weight:700;cursor:pointer}
+.bk-dl{background:linear-gradient(135deg,var(--fire),#ff9a2a);color:#1a0a00}
+.bk-ul{background:var(--card3);border:1px solid var(--line)}
+
 .cf{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:60;pointer-events:none;animation:fall 1.8s ease-in forwards}
 @keyframes fall{to{top:105vh;transform:rotate(720deg) translateX(40px)}}
