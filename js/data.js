@@ -9,6 +9,11 @@ const EX = [
 const EXM = Object.fromEntries(EX.map(e => [e.id, e]));
 const KEY = 'zincir-v1';
 const DEMO = new URLSearchParams(location.search).has('demo');
+const SEED_KEY = 'zincir-seed-2';
+const SEED = {
+  '2026-11-09': {hang:[53,40,30,31], plank:[120,80,60], push:[20,15,7], sit:[15,6,9], pull:[5,4,3]},
+  '2026-11-10': {hang:[58,28,30,25], plank:[90,75,75],  push:[15,15,7], sit:[11,7,6], pull:[6,5,3]},
+};
 
 const pad = n => String(n).padStart(2, '0');
 const ymd = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
@@ -48,10 +53,12 @@ const Store = {
   listeners: [],
   load() {
     if (DEMO) { this.data = demoData(); return; }
-    let raw = null;
-    try { raw = localStorage.getItem(KEY); } catch (e) {}
-    this.data = raw ? JSON.parse(raw)
-      : {'2026-11-09': {hang:[53,40,30,31], plank:[120,80,60], push:[20,15,7], sit:[15,6,9], pull:[5,4,3]}};
+    let raw = null, seeded = false;
+    try { raw = localStorage.getItem(KEY); seeded = !!localStorage.getItem(SEED_KEY); } catch (e) {}
+    this.data = raw ? JSON.parse(raw) : {};
+    // başlangıç günlerini bir kez ekle; o güne zaten kayıt varsa dokunma
+    if (!seeded) for (const [d, r] of Object.entries(SEED)) if (!this.data[d]) this.data[d] = JSON.parse(JSON.stringify(r));
+    try { localStorage.setItem(SEED_KEY, '1'); } catch (e) {}
     this.save();
   },
   save() { if (!DEMO) try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) {} },
