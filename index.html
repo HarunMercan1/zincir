@@ -6,114 +6,176 @@
 <title>Zinciri Kırma</title>
 <style>
 :root{
-  --bg:#0b0d12; --card:#141824; --card2:#1b2133; --line:#262d44;
-  --text:#e8ecf7; --mute:#8a93b0; --fire:#ff7a1a; --fire2:#ffb347;
-  --hang:#38bdf8; --plank:#a78bfa; --push:#f472b6; --sit:#34d399; --pull:#fbbf24;
+  --bg:#07080d; --card:#10131d; --card2:#171c2b; --line:#232a42;
+  --text:#eef1fb; --mute:#8790ad; --fire:#ff6a00; --fire2:#ffb340; --fire3:#ffe08a;
 }
 *{box-sizing:border-box;margin:0}
-body{background:radial-gradient(1200px 600px at 50% -200px,#1d2340,var(--bg));color:var(--text);
-  font:15px/1.4 system-ui,Segoe UI,sans-serif;min-height:100vh;padding:20px 16px 60px}
-.wrap{max-width:980px;margin:0 auto}
-h1{font-size:22px;letter-spacing:.5px}
-h2{font-size:13px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mute);margin:28px 0 12px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
-.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}
-.stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
-.stat b{display:block;font-size:34px;line-height:1.1}
-.stat span{color:var(--mute);font-size:13px}
-.stat.fire{background:linear-gradient(135deg,#3a1d08,#1c1209);border-color:#5b3210}
-.stat.fire b{color:var(--fire2)}
-/* zincir */
-.chain{display:flex;flex-wrap:wrap;gap:6px}
-.link{width:38px;height:38px;border-radius:12px;background:var(--card);border:1px solid var(--line);
-  display:grid;place-items:center;font-size:11px;color:var(--mute);position:relative;cursor:pointer}
-.link.full{background:linear-gradient(135deg,var(--fire),var(--fire2));color:#2a1200;font-weight:700;border-color:transparent;
-  box-shadow:0 0 14px #ff7a1a55}
-.link.part{background:#4a2c12;color:var(--fire2);border-color:#7a4a1c}
-.link.today{outline:2px solid var(--text);outline-offset:2px}
-.link.sel{outline:2px dashed var(--fire2);outline-offset:2px}
-.link.future{opacity:.35;cursor:default}
-.legend{color:var(--mute);font-size:12px;margin-top:10px}
-/* giriş */
+body{background:var(--bg);color:var(--text);font:15px/1.45 system-ui,"Segoe UI",sans-serif;min-height:100vh;padding:0 16px 80px;
+  background-image:radial-gradient(900px 500px at 50% -120px,#2a1606 0%,transparent 70%),radial-gradient(700px 400px at 100% 30%,#12163a55,transparent)}
+.wrap{max-width:1040px;margin:0 auto}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:2px;color:var(--mute);margin:42px 0 14px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--line),transparent)}
+.card{background:linear-gradient(180deg,var(--card),#0d1019);border:1px solid var(--line);border-radius:20px;padding:18px}
+
+/* HERO */
+.hero{text-align:center;padding:40px 0 10px;position:relative}
+.brand{font-size:12px;letter-spacing:4px;color:var(--mute);text-transform:uppercase}
+.flame{font-size:54px;filter:drop-shadow(0 0 22px #ff6a00);animation:flick 1.6s ease-in-out infinite;display:inline-block}
+@keyframes flick{0%,100%{transform:scale(1) rotate(-2deg)}50%{transform:scale(1.08) rotate(2deg)}}
+.big{font-size:clamp(88px,22vw,150px);font-weight:900;line-height:.95;letter-spacing:-4px;
+  background:linear-gradient(180deg,var(--fire3),var(--fire) 80%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 30px #ff6a0055)}
+.bigsub{font-size:18px;letter-spacing:6px;text-transform:uppercase;color:var(--fire2);margin-top:2px}
+.msg{margin-top:14px;color:var(--mute)}
+.msg b{color:var(--text)}
+.ms{max-width:460px;margin:18px auto 0}
+.ms .track{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;border:1px solid var(--line)}
+.ms .fill{height:100%;background:linear-gradient(90deg,var(--fire),var(--fire3));border-radius:99px;box-shadow:0 0 14px #ff6a00;transition:width .6s}
+.ms small{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-top:6px}
+.chainsvg{margin:26px auto 0;display:block;width:100%;max-width:1000px;height:auto;overflow:visible}
+.pulse{animation:pl 1.4s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:.35}50%{opacity:1}}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:30px}
+.kpi b{display:block;font-size:30px;line-height:1.1}
+.kpi span{color:var(--mute);font-size:12px}
+
+/* GÖREV HALKALARI */
+.rings{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.ringcard{text-align:center;cursor:pointer;transition:transform .15s,border-color .15s}
+.ringcard:hover{transform:translateY(-3px);border-color:var(--c)}
+.ringcard .rv{font-size:11px;fill:var(--mute)}
+.ringcard h4{font-size:14px;margin-top:4px}
+.ringcard small{color:var(--mute);display:block;font-size:12px}
+.done{color:var(--c)}
+
+/* GİRİŞ */
 .datebar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
 input,button{font:inherit;color:var(--text)}
-input[type=date],input[type=number]{background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
-.ex{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;border-top:3px solid var(--c)}
+input[type=date],input[type=number]{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:9px 12px}
+input:focus{outline:2px solid var(--c,var(--fire2));outline-offset:1px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:12px}
+.ex{border-top:3px solid var(--c)}
 .ex header{display:flex;justify-content:space-between;align-items:baseline}
 .ex h3{font-size:16px}
-.ex .tot{color:var(--c);font-weight:700}
-.sets{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;min-height:32px}
-.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 12px;cursor:pointer}
+.ex .tot{color:var(--c);font-weight:800;font-size:20px}
+.delta{font-size:12px;margin-left:6px;font-weight:600}
+.up{color:#34d399}.down{color:#f87171}.eq{color:var(--mute)}
+.sets{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0;min-height:34px}
+.chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:4px 13px;cursor:pointer;font-weight:600}
+.chip.pr{border-color:var(--fire2);color:var(--fire3);box-shadow:0 0 10px #ffb34044}
 .chip:hover{border-color:#ff5a5a;text-decoration:line-through}
 .add{display:flex;gap:8px}
 .add input{flex:1;min-width:0}
-.btn{background:var(--c);color:#111;border:0;border-radius:10px;padding:8px 16px;font-weight:700;cursor:pointer}
-.hint{color:var(--mute);font-size:12px;margin-top:6px}
+.btn{background:var(--c);color:#0a0a0a;border:0;border-radius:12px;padding:9px 18px;font-weight:800;cursor:pointer}
+.btn:hover{filter:brightness(1.12)}
+.hint{color:var(--mute);font-size:12px}
+
+/* ısı haritası */
+.heat{display:flex;gap:4px;overflow-x:auto;padding-bottom:6px}
+.hcol{display:grid;grid-template-rows:repeat(7,1fr);gap:4px}
+.hc{width:16px;height:16px;border-radius:4px;background:#161b2b}
+.hc.l1{background:#4a2406}.hc.l2{background:#7a3a08}.hc.l3{background:#b85200}.hc.l4{background:#ff7a0a}.hc.l5{background:var(--fire3);box-shadow:0 0 8px #ffb340aa}
+.hc.f{background:transparent}
+.hc.t{outline:1.5px solid var(--text)}
+.hleg{display:flex;gap:6px;align-items:center;margin-top:10px;color:var(--mute);font-size:12px}
+
 /* istatistik */
-.exstat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;border-left:3px solid var(--c)}
-.exstat .row{display:flex;gap:22px;flex-wrap:wrap;margin-top:6px}
-.exstat .row div b{display:block;font-size:20px}
-.exstat .row div span{color:var(--mute);font-size:12px}
-.bars{display:flex;align-items:flex-end;gap:4px;height:64px;margin-top:12px}
-.bar{flex:1;min-width:6px;max-width:34px;background:var(--c);border-radius:4px 4px 0 0;opacity:.85;position:relative}
-.bar:hover{opacity:1}
-.bar[title]:hover::after{content:attr(title);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);
-  background:#000;padding:2px 6px;border-radius:6px;font-size:11px;white-space:nowrap}
-.foot{margin-top:30px;display:flex;gap:10px;flex-wrap:wrap}
-.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:6px 12px;color:var(--mute);cursor:pointer}
+.exstat{border-left:3px solid var(--c);margin-bottom:14px}
+.exstat h3{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px}
+.exstat h3 small{color:var(--mute);font-weight:400;font-size:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:14px 0}
+.tile{background:var(--card2);border-radius:12px;padding:10px 12px}
+.tile b{display:block;font-size:20px;color:var(--c)}
+.tile span{font-size:11px;color:var(--mute)}
+.chart{width:100%;height:auto;display:block}
+.cmp{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mute);margin-top:6px;flex-wrap:wrap}
+
+/* rekorlar & rozetler */
+.records{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.rec{text-align:center;border-bottom:3px solid var(--c)}
+.rec .rt{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:1px}
+.rec b{display:block;font-size:34px;color:var(--c);line-height:1.2}
+.rec small{color:var(--mute)}
+.badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.badge{text-align:center;padding:16px 10px}
+.badge .ic{font-size:34px;filter:grayscale(1) opacity(.3)}
+.badge.on .ic{filter:drop-shadow(0 0 10px #ffb34099)}
+.badge.on{border-color:#7a4a1c;background:linear-gradient(180deg,#24150a,#10131d)}
+.badge b{display:block;font-size:13px;margin-top:6px}
+.badge small{color:var(--mute);font-size:11px}
+.foot{margin-top:40px}
+.ghost{background:transparent;border:1px solid var(--line);border-radius:10px;padding:7px 14px;color:var(--mute);cursor:pointer}
+.ghost:hover{color:var(--text)}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="top">
-    <h1>⛓️ Zinciri Kırma</h1>
-    <span id="todayLabel" style="color:var(--mute)"></span>
-  </div>
 
-  <div class="stats">
-    <div class="stat fire"><b id="sStreak">0</b><span>🔥 Güncel zincir (gün)</span></div>
-    <div class="stat"><b id="sBest">0</b><span>En uzun zincir</span></div>
-    <div class="stat"><b id="sDays">0</b><span>Toplam antrenman günü</span></div>
-    <div class="stat"><b id="sSets">0</b><span>Toplam set</span></div>
-  </div>
+  <section class="hero">
+    <div class="brand">⛓ Zinciri Kırma</div>
+    <div class="flame">🔥</div>
+    <div class="big" id="hStreak">0</div>
+    <div class="bigsub">günlük zincir</div>
+    <div class="msg" id="hMsg"></div>
+    <div class="ms">
+      <div class="track"><div class="fill" id="msFill"></div></div>
+      <small><span id="msL"></span><span id="msR"></span></small>
+    </div>
+    <svg class="chainsvg" id="chainSvg" viewBox="0 0 1000 120"></svg>
+  </section>
 
-  <h2>Zincir — son 35 gün</h2>
-  <div class="chain" id="chain"></div>
-  <div class="legend">Parlak = 5 hareketin hepsi yapıldı · Soluk = bir kısmı · Bir güne tıklayıp o günü düzenleyebilirsin</div>
+  <div class="kpis" id="kpis"></div>
+
+  <h2>Bugünün görevi · dünü geç</h2>
+  <div class="rings" id="rings"></div>
 
   <h2>Giriş</h2>
   <div class="datebar">
     <input type="date" id="date">
-    <span id="dayInfo" style="color:var(--mute)"></span>
+    <span id="dayInfo" class="hint" style="font-size:14px"></span>
   </div>
   <div class="cards" id="cards"></div>
 
-  <h2>İstatistikler</h2>
+  <h2>Aktivite haritası</h2>
+  <div class="card">
+    <div class="heat" id="heat"></div>
+    <div class="hleg">Az <i class="hc" style="display:inline-block"></i><i class="hc l1" style="display:inline-block"></i><i class="hc l2" style="display:inline-block"></i><i class="hc l3" style="display:inline-block"></i><i class="hc l4" style="display:inline-block"></i><i class="hc l5" style="display:inline-block"></i> Çok · koyudan parlağa: o gün kaç hareketi yaptın</div>
+  </div>
+
+  <h2>Hareket hareket detay</h2>
   <div id="exstats"></div>
 
-  <div class="foot">
-    <button class="ghost" id="export">Yedek indir (JSON)</button>
-  </div>
+  <h2>Rekorlar</h2>
+  <div class="records" id="records"></div>
+
+  <h2>Rozetler</h2>
+  <div class="badges" id="badges"></div>
+
+  <div class="foot"><button class="ghost" id="export">Yedek indir (JSON)</button></div>
 </div>
 
 <script>
-const EX = [
-  {id:'hang',  name:'Asılı kalma', unit:'sn',   color:'#38bdf8'},
-  {id:'plank', name:'Plank',       unit:'sn',   color:'#a78bfa'},
-  {id:'push',  name:'Şınav',       unit:'tekrar',color:'#f472b6'},
-  {id:'sit',   name:'Mekik',       unit:'tekrar',color:'#34d399'},
-  {id:'pull',  name:'Barfiks',     unit:'tekrar',color:'#fbbf24'},
+const EX=[
+  {id:'hang', name:'Asılı kalma',unit:'sn',    color:'#38bdf8'},
+  {id:'plank',name:'Plank',      unit:'sn',    color:'#a78bfa'},
+  {id:'push', name:'Şınav',      unit:'tekrar',color:'#f472b6'},
+  {id:'sit',  name:'Mekik',      unit:'tekrar',color:'#34d399'},
+  {id:'pull', name:'Barfiks',    unit:'tekrar',color:'#fbbf24'},
 ];
 const KEY='zincir-v1';
+const $=id=>document.getElementById(id);
 const pad=n=>String(n).padStart(2,'0');
 const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
 const addDays=(s,n)=>{const d=new Date(s+'T12:00:00');d.setDate(d.getDate()+n);return ymd(d)};
+const diffDays=(a,b)=>Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/864e5);
 const today=ymd(new Date());
+const fmtD=s=>new Date(s+'T12:00:00').toLocaleDateString('tr-TR',{day:'numeric',month:'short'});
+const sum=a=>a.reduce((x,y)=>x+y,0);
 
 function load(){
   try{const raw=localStorage.getItem(KEY);if(raw)return JSON.parse(raw)}catch(e){}
-  // ilk açılış: dünkü kayıtlar
   return {[addDays(today,-1)]:{hang:[53,40,30,31],plank:[120,80,60],push:[20,15,7],sit:[15,6,9],pull:[5,4,3]}};
 }
 let data=load();
@@ -121,67 +183,126 @@ const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){}};
 save();
 let sel=today;
 
-const sum=a=>a.reduce((x,y)=>x+y,0);
-const dayState=d=>{
-  const r=data[d]; if(!r) return 0;
-  const done=EX.filter(e=>(r[e.id]||[]).length).length;
-  return done===EX.length?2:done>0?1:0;
-};
-const worked=d=>dayState(d)>0;
+const doneCount=d=>{const r=data[d];return r?EX.filter(e=>(r[e.id]||[]).length).length:0};
+const dayState=d=>{const c=doneCount(d);return c===EX.length?2:c>0?1:0};
+const worked=d=>doneCount(d)>0;
+const allDays=()=>Object.keys(data).filter(worked).sort();
+const firstDay=()=>allDays()[0];
+const total=(d,id)=>sum((data[d]&&data[d][id])||[]);
 
 function streaks(){
-  const days=Object.keys(data).filter(worked).sort();
-  let best=0,run=0,prev=null;
+  const days=allDays();let best=0,run=0,prev=null;
   for(const d of days){run=(prev&&addDays(prev,1)===d)?run+1:1;best=Math.max(best,run);prev=d}
-  // güncel: bugün yapılmadıysa dünden geriye say (zincir hâlâ canlı)
   let cur=0,d=worked(today)?today:addDays(today,-1);
   while(worked(d)){cur++;d=addDays(d,-1)}
   return {cur,best,days:days.length};
 }
+// seçili günden önceki son antrenman günü
+const prevSession=(d,id)=>allDays().filter(x=>x<d&&(!id||total(x,id)>0)).pop();
 
-function renderTop(){
+/* ---------- HERO ---------- */
+const MS=[3,7,14,21,30,50,75,100,150,200,365];
+function renderHero(){
   const s=streaks();
-  sStreak.textContent=s.cur; sBest.textContent=s.best; sDays.textContent=s.days;
-  sSets.textContent=Object.values(data).reduce((t,r)=>t+EX.reduce((q,e)=>q+(r[e.id]||[]).length,0),0);
-  todayLabel.textContent=new Date().toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
+  $('hStreak').textContent=s.cur;
+  const next=MS.find(m=>m>s.cur)||s.cur+100, prev=[0,...MS].filter(m=>m<=s.cur).pop();
+  $('msFill').style.width=Math.min(100,(s.cur-prev)/(next-prev)*100)+'%';
+  $('msL').textContent=`${prev} gün`;$('msR').textContent=`Sıradaki hedef: ${next} gün (${next-s.cur} kaldı)`;
+  let m;
+  if(!firstDay()) m='İlk halkayı bugün tak.';
+  else if(worked(today)) m=`<b>Bugünkü halka takıldı.</b> Zincir yarın için de canlı. ${doneCount(today)}/5 hareket.`;
+  else if(s.cur>0){
+    const end=new Date();end.setHours(24,0,0,0);const ms=end-new Date();
+    m=`Zincirin kırılmasına <b>${Math.floor(ms/36e5)} sa ${Math.floor(ms%36e5/6e4)} dk</b> var. Bugün en az bir set yap.`;
+  } else m='Zincir koptu. Yeniden başlamak için bugün tek bir set yeter.';
+  $('hMsg').innerHTML=m;
+  drawChain();
+  const sets=Object.values(data).reduce((t,r)=>t+EX.reduce((q,e)=>q+(r[e.id]||[]).length,0),0);
+  const full=Object.keys(data).filter(d=>dayState(d)===2).length;
+  const rate=firstDay()?Math.round(s.days/(diffDays(firstDay(),today)+1)*100):0;
+  $('kpis').innerHTML=[
+    [s.best,'en uzun zincir'],[s.days,'antrenman günü'],[full,'5/5 tam gün'],[sets,'toplam set'],[rate+'%','istikrar oranı']
+  ].map(([v,l])=>`<div class="card kpi"><b>${v}</b><span>${l}</span></div>`).join('');
 }
 
-function renderChain(){
-  chain.innerHTML='';
-  for(let i=34;i>=0;i--){
-    const d=addDays(today,-i), st=dayState(d);
-    const el=document.createElement('div');
-    el.className='link'+(st===2?' full':st===1?' part':'')+(d===today?' today':'')+(d===sel?' sel':'');
-    el.textContent=+d.slice(8);
-    el.title=d;
-    el.onclick=()=>{sel=d;date.value=d;renderAll()};
-    chain.appendChild(el);
-  }
+function drawChain(){
+  const N=innerWidth<600?8:16, step=1000/N, y=60;
+  let out=`<defs>
+    <linearGradient id="gf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset=".5" stop-color="#ff9a1f"/><stop offset="1" stop-color="#ff5a00"/></linearGradient>
+    <linearGradient id="gp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b87a3a"/><stop offset="1" stop-color="#6b3d12"/></linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
+  // bağlantı çizgisi
+  const days=[];for(let i=N-1;i>=0;i--)days.push(addDays(today,-i));
+  days.forEach((d,i)=>{
+    const cx=step*i+step/2, st=dayState(d), fd=firstDay();
+    const before=!fd||d<fd, isT=d===today, wide=i%2===0;
+    const missed=!before&&st===0&&!isT;
+    const stroke=st===2?'url(#gf)':st===1?'url(#gp)':missed?'#3a2b2b':'#232a42';
+    const flt=st===2?' filter="url(#glow)"':'';
+    const w=wide?step*0.92:step*0.34, h=40;
+    if(missed&&!wide){ // dar halka kopuk: sönük çubuk
+      out+=`<rect x="${cx-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="8" fill="none" stroke="#3a2b2b" stroke-width="9" stroke-dasharray="7 9" opacity=".8"/>`;
+    }else if(missed){ // kırık halka: iki yarı ve boşluk
+      const x0=cx-w/2,x1=cx+w/2,y0=y-h/2,y1=y+h/2,r=20;
+      out+=`<g stroke="${stroke}" stroke-width="8" fill="none" stroke-linecap="round" opacity=".9">
+        <path d="M${cx-3},${y0} H${x0+r} A${r},${r} 0 0 0 ${x0},${y0+r} V${y1-r} A${r},${r} 0 0 0 ${x0+r},${y1} H${cx-3}"/>
+        <path d="M${cx+6},${y0} H${x1-r} A${r},${r} 0 0 1 ${x1},${y0+r} V${y1-r} A${r},${r} 0 0 1 ${x1-r},${y1} H${cx+6}"/></g>
+        <path d="M${cx-2},${y-9} l5,9 l-6,6 l6,9" stroke="#ef4444" stroke-width="2" fill="none" opacity=".9"/>`;
+    }else{
+      out+=`<rect x="${cx-w/2}" y="${y-h/2}" width="${w}" height="${h}" rx="${wide?20:8}" fill="none" stroke="${stroke}" stroke-width="${wide?8:9}"${flt}${isT&&st===0?' class="pulse" stroke-dasharray="6 6"':''}/>`;
+    }
+    out+=`<text x="${cx}" y="${y+h/2+24}" text-anchor="middle" font-size="11" fill="${isT?'#fff':'#6b7390'}" font-weight="${isT?700:400}">${+d.slice(8)}</text>`;
+  });
+  $('chainSvg').innerHTML=out;
 }
 
+/* ---------- GÖREV HALKALARI ---------- */
+function ring(p,color,label){
+  const R=44,C=2*Math.PI*R;
+  return `<svg viewBox="0 0 110 110" width="104" height="104"><circle cx="55" cy="55" r="${R}" fill="none" stroke="#1b2133" stroke-width="10"/>
+  <circle cx="55" cy="55" r="${R}" fill="none" stroke="${color}" stroke-width="10" stroke-linecap="round"
+   stroke-dasharray="${C*Math.min(p,1)} ${C}" transform="rotate(-90 55 55)" style="filter:drop-shadow(0 0 6px ${color}99)"/>
+  <text x="55" y="61" text-anchor="middle" font-size="19" font-weight="800" fill="#eef1fb">${label}</text></svg>`;
+}
+function renderRings(){
+  const el=$('rings');el.innerHTML='';
+  EX.forEach((e,i)=>{
+    const t=total(today,e.id), pd=prevSession(today,e.id), target=pd?total(pd,e.id):0;
+    const p=target?t/target:(t>0?1:0);
+    const c=document.createElement('div');c.className='card ringcard';c.style.setProperty('--c',e.color);
+    const beat=target&&t>target;
+    c.innerHTML=ring(p,e.color,target?Math.round(p*100)+'%':(t>0?'✓':'–'))+
+      `<h4 class="${p>=1?'done':''}">${e.name}${beat?' 🏆':''}</h4>
+       <small>${target?`bugün ${t} / hedef ${target+1} ${e.unit}`:'henüz referans yok'}</small>`;
+    c.onclick=()=>{sel=today;date.value=today;renderCards();cards.children[i].querySelector('input').focus()};
+    el.appendChild(c);
+  });
+}
+
+/* ---------- GİRİŞ ---------- */
 function renderCards(){
   cards.innerHTML='';
   const r=data[sel]||{};
   dayInfo.textContent=sel===today?'Bugün':new Date(sel+'T12:00:00').toLocaleDateString('tr-TR',{weekday:'long',day:'numeric',month:'long'});
   for(const e of EX){
-    const sets=r[e.id]||[];
-    const c=document.createElement('div');c.className='ex';c.style.setProperty('--c',e.color);
-    c.innerHTML=`<header><h3>${e.name}</h3><span class="tot">${sum(sets)} ${e.unit}</span></header>
+    const sets=r[e.id]||[], pd=prevSession(sel,e.id), prevT=pd?total(pd,e.id):0, t=sum(sets);
+    const best=Math.max(0,...allDays().filter(d=>d!==sel).flatMap(d=>data[d][e.id]||[]));
+    let dl='';
+    if(pd&&t){const df=t-prevT;dl=`<span class="delta ${df>0?'up':df<0?'down':'eq'}">${df>0?'▲':df<0?'▼':'='} ${Math.abs(df)}</span>`}
+    const c=document.createElement('div');c.className='card ex';c.style.setProperty('--c',e.color);
+    c.innerHTML=`<header><h3>${e.name}</h3><span class="tot">${t} ${e.unit}${dl}</span></header>
       <div class="sets"></div>
       <div class="add"><input type="number" min="1" inputmode="numeric" placeholder="${e.unit}"><button class="btn">Ekle</button></div>
-      <div class="hint">Enter ile ekle · bir sete tıklarsan silinir</div>`;
+      <div class="hint" style="margin-top:6px">${pd?`Son seferde (${fmtD(pd)}): ${(data[pd][e.id]||[]).join(' · ')}`:'Enter ile ekle · sete tıklarsan silinir'}</div>`;
     const box=c.querySelector('.sets');
-    if(!sets.length) box.innerHTML='<span class="hint">Henüz set yok</span>';
+    if(!sets.length)box.innerHTML='<span class="hint">Henüz set yok</span>';
     sets.forEach((v,i)=>{
-      const ch=document.createElement('span');ch.className='chip';ch.textContent=v;
+      const ch=document.createElement('span');ch.className='chip'+(v>best?' pr':'');ch.textContent=v+(v>best?' ★':'');
       ch.onclick=()=>{sets.splice(i,1);if(!sets.length)delete r[e.id];commit(r)};
       box.appendChild(ch);
     });
     const inp=c.querySelector('input');
-    const add=()=>{
-      const v=parseInt(inp.value,10); if(!(v>0))return;
-      r[e.id]=[...sets,v]; commit(r,e.id);
-    };
+    const add=()=>{const v=parseInt(inp.value,10);if(!(v>0))return;r[e.id]=[...sets,v];commit(r,e.id)};
     c.querySelector('button').onclick=add;
     inp.onkeydown=ev=>{if(ev.key==='Enter')add()};
     cards.appendChild(c);
@@ -190,41 +311,126 @@ function renderCards(){
 function commit(r,focusId){
   if(Object.keys(r).length)data[sel]=r;else delete data[sel];
   save();renderAll();
-  if(focusId){const i=EX.findIndex(e=>e.id===focusId);cards.children[i].querySelector('input').focus()}
+  if(focusId){cards.children[EX.findIndex(e=>e.id===focusId)].querySelector('input').focus()}
 }
 
-function renderStats(){
-  exstats.innerHTML='';
-  const days=Object.keys(data).sort();
-  for(const e of EX){
-    const all=days.flatMap(d=>data[d][e.id]||[]);
-    const perDay=days.map(d=>({d,t:sum(data[d][e.id]||[])})).filter(x=>x.t>0);
-    const el=document.createElement('div');el.className='exstat';el.style.setProperty('--c',e.color);
-    if(!all.length){el.innerHTML=`<h3>${e.name}</h3><div class="hint">Veri yok</div>`;exstats.appendChild(el);continue}
-    const max=Math.max(...perDay.map(x=>x.t));
-    el.innerHTML=`<h3>${e.name}</h3>
-      <div class="row">
-        <div><b>${sum(all)}</b><span>toplam ${e.unit}</span></div>
-        <div><b>${Math.max(...all)}</b><span>en iyi set</span></div>
-        <div><b>${Math.max(...perDay.map(x=>x.t))}</b><span>en iyi gün (toplam)</span></div>
-        <div><b>${(sum(all)/all.length).toFixed(1)}</b><span>set ortalaması</span></div>
-        <div><b>${all.length}</b><span>set sayısı</span></div>
-      </div>
-      <div class="bars">${perDay.slice(-30).map(x=>`<div class="bar" style="height:${Math.max(6,x.t/max*100)}%" title="${x.d}: ${x.t} ${e.unit}"></div>`).join('')}</div>
-      <div class="hint">Günlük toplam (son 30 antrenman günü)</div>`;
-    exstats.appendChild(el);
+/* ---------- ISI HARİTASI ---------- */
+function renderHeat(){
+  const W=22, dow=(new Date(today+'T12:00:00').getDay()+6)%7; // Pzt=0
+  const lastMon=addDays(today,-dow), first=addDays(lastMon,-(W-1)*7);
+  let out='';
+  for(let w=0;w<W;w++){
+    out+='<div class="hcol">';
+    for(let k=0;k<7;k++){
+      const d=addDays(first,w*7+k);
+      if(d>today){out+='<div class="hc f"></div>';continue}
+      const c=doneCount(d);
+      out+=`<div class="hc${c?' l'+c:''}${d===today?' t':''}" title="${fmtD(d)}: ${c}/5 hareket"></div>`;
+    }
+    out+='</div>';
   }
+  $('heat').innerHTML=out;
 }
 
-function renderAll(){renderTop();renderChain();renderCards();renderStats()}
-date.value=today; date.max=today;
-date.onchange=()=>{if(date.value&&date.value<=today){sel=date.value;renderAll()}};
-export_=document.getElementById('export');
-document.getElementById('export').onclick=()=>{
+/* ---------- ÇİZGİ GRAFİK ---------- */
+function lineChart(pts,color,uid,unit){
+  const W=640,H=170,pl=36,pr=14,pt=16,pb=24;
+  if(!pts.length)return '';
+  const vs=pts.map(p=>p.v),max=Math.max(...vs)*1.15||1;
+  const x=i=>pts.length===1?W/2:pl+i*(W-pl-pr)/(pts.length-1), y=v=>pt+(H-pt-pb)*(1-v/max);
+  const line=pts.map((p,i)=>`${i?'L':'M'}${x(i).toFixed(1)},${y(p.v).toFixed(1)}`).join(' ');
+  const area=`${line} L${x(pts.length-1)},${H-pb} L${x(0)},${H-pb} Z`;
+  // doğrusal trend
+  let tr='';
+  if(pts.length>2){
+    const n=pts.length,mx=(n-1)/2,my=sum(vs)/n;
+    let nu=0,de=0;pts.forEach((p,i)=>{nu+=(i-mx)*(p.v-my);de+=(i-mx)**2});
+    const sl=nu/de,b=my-sl*mx;
+    tr=`<line x1="${x(0)}" y1="${y(b)}" x2="${x(n-1)}" y2="${y(b+sl*(n-1))}" stroke="${color}" stroke-dasharray="5 5" opacity=".6"/>`;
+  }
+  let grid='';
+  for(let g=0;g<=3;g++){const v=max/1.15*g/3,yy=y(v);grid+=`<line x1="${pl}" x2="${W-pr}" y1="${yy}" y2="${yy}" stroke="#232a42" stroke-width="1"/><text x="${pl-6}" y="${yy+4}" text-anchor="end" font-size="10" fill="#6b7390">${Math.round(v)}</text>`}
+  const bi=vs.indexOf(Math.max(...vs));
+  const dots=pts.map((p,i)=>`<circle cx="${x(i)}" cy="${y(p.v)}" r="${i===bi?6:3.5}" fill="${i===bi?'#ffe08a':color}" stroke="#0d1019" stroke-width="2"><title>${fmtD(p.d)}: ${p.v} ${unit}</title></circle>`).join('');
+  const lab=[0,pts.length-1].filter((v,i,a)=>a.indexOf(v)===i).map(i=>`<text x="${x(i)}" y="${H-6}" text-anchor="${i?'end':'start'}" font-size="10" fill="#6b7390">${fmtD(pts[i].d)}</text>`).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="a${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".45"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+  ${grid}<path d="${area}" fill="url(#a${uid})"/>${tr}<path d="${line}" fill="none" stroke="${color}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" style="filter:drop-shadow(0 0 5px ${color}88)"/>${dots}${lab}</svg>`;
+}
+
+/* ---------- HAREKET DETAYI ---------- */
+const weekStart=d=>addDays(d,-((new Date(d+'T12:00:00').getDay()+6)%7));
+function renderStats(){
+  const el=$('exstats');el.innerHTML='';
+  const days=Object.keys(data).sort();
+  const tw=weekStart(today), lw=addDays(tw,-7);
+  EX.forEach((e,idx)=>{
+    const all=days.flatMap(d=>data[d][e.id]||[]);
+    const perDay=days.map(d=>({d,v:total(d,e.id)})).filter(x=>x.v>0);
+    const c=document.createElement('div');c.className='card exstat';c.style.setProperty('--c',e.color);
+    if(!all.length){c.innerHTML=`<h3>${e.name}</h3><div class="hint">Veri yok</div>`;el.appendChild(c);return}
+    const wk=(from)=>sum(perDay.filter(x=>x.d>=from&&x.d<addDays(from,7)).map(x=>x.v));
+    const a=wk(tw),b=wk(lw),pct=b?Math.round((a-b)/b*100):null;
+    const bestDay=perDay.reduce((m,x)=>x.v>m.v?x:m,perDay[0]);
+    const avgSet=sum(all)/all.length;
+    // dayanıklılık: her setin ilkine göre ne kadar düşüyor (yorgunluk)
+    const fat=days.map(d=>data[d][e.id]||[]).filter(s=>s.length>1).map(s=>s[s.length-1]/s[0]);
+    const fatAvg=fat.length?Math.round((1-sum(fat)/fat.length)*100):null;
+    const last=perDay[perDay.length-1],pr=perDay[perDay.length-2];
+    const trend=pr?last.v-pr.v:null;
+    c.innerHTML=`<h3><span><span style="color:${e.color}">●</span> ${e.name}</span><small>${perDay.length} antrenman · ${all.length} set</small></h3>
+     <div class="tiles">
+      <div class="tile"><b>${sum(all)}</b><span>toplam ${e.unit}</span></div>
+      <div class="tile"><b>${Math.max(...all)}</b><span>en iyi tek set</span></div>
+      <div class="tile"><b>${bestDay.v}</b><span>en iyi gün · ${fmtD(bestDay.d)}</span></div>
+      <div class="tile"><b>${avgSet.toFixed(1)}</b><span>set ortalaması</span></div>
+      <div class="tile"><b>${fatAvg===null?'–':'%'+fatAvg}</b><span>set içi düşüş (yorgunluk)</span></div>
+      <div class="tile"><b>${trend===null?'–':(trend>0?'+':'')+trend}</b><span>son antrenmanda değişim</span></div>
+     </div>
+     ${perDay.length>1?lineChart(perDay,e.color,idx,e.unit):'<div class="hint" style="padding:18px 0">Grafik için en az 2 antrenman günü gerekir. Yarın zinciri sürdür.</div>'}
+     <div class="cmp"><span>Bu hafta: <b style="color:var(--text)">${a}</b></span><span>Geçen hafta: <b style="color:var(--text)">${b}</b></span>
+      ${pct===null?'':`<span class="${pct>=0?'up':'down'}">${pct>=0?'▲':'▼'} %${Math.abs(pct)}</span>`}</div>`;
+    el.appendChild(c);
+  });
+}
+
+/* ---------- REKORLAR & ROZETLER ---------- */
+function renderRecords(){
+  const days=Object.keys(data).sort();
+  $('records').innerHTML=EX.map(e=>{
+    let best=0,bd='';days.forEach(d=>(data[d][e.id]||[]).forEach(v=>{if(v>best){best=v;bd=d}}));
+    return `<div class="card rec" style="--c:${e.color}"><div class="rt">${e.name}</div><b>${best||'–'}</b><small>${best?`${e.unit} · ${fmtD(bd)}`:'henüz yok'}</small></div>`;
+  }).join('');
+}
+function renderBadges(){
+  const s=streaks(), full=Object.keys(data).filter(d=>dayState(d)===2).length;
+  const tot=id=>Object.keys(data).reduce((t,d)=>t+total(d,id),0);
+  const B=[
+    ['🌱','İlk adım','İlk antrenman',s.days>=1],
+    ['🔥','3 gün','3 günlük zincir',s.best>=3],
+    ['⚡','Haftalık','7 günlük zincir',s.best>=7],
+    ['🏅','İki hafta','14 günlük zincir',s.best>=14],
+    ['👑','30 gün','30 günlük zincir',s.best>=30],
+    ['💎','100 gün','100 günlük zincir',s.best>=100],
+    ['✅','Tam gün','5/5 hareket bir günde',full>=1],
+    ['🧱','Tam hafta','7 tam gün',full>=7],
+    ['💪','100 şınav','toplam 100 şınav',tot('push')>=100],
+    ['🦾','1000 şınav','toplam 1000 şınav',tot('push')>=1000],
+    ['🧗','50 barfiks','toplam 50 barfiks',tot('pull')>=50],
+    ['⏱️','Plank 5 dk','tek günde 300 sn plank',Object.keys(data).some(d=>total(d,'plank')>=300)],
+    ['🪝','Asılı 1 dk','tek sette 60 sn',Object.values(data).some(r=>(r.hang||[]).some(v=>v>=60))],
+  ];
+  $('badges').innerHTML=B.map(([ic,t,s2,on])=>`<div class="card badge${on?' on':''}"><div class="ic">${ic}</div><b>${t}</b><small>${s2}</small></div>`).join('');
+}
+
+function renderAll(){renderHero();renderRings();renderCards();renderHeat();renderStats();renderRecords();renderBadges()}
+date.value=today;date.max=today;
+date.onchange=()=>{if(date.value&&date.value<=today){sel=date.value;renderCards()}};
+$('export').onclick=()=>{
   const a=document.createElement('a');
   a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,1)],{type:'application/json'}));
   a.download=`zincir-yedek-${today}.json`;a.click();
 };
+setInterval(renderHero,60000);
 renderAll();
 </script>
 </body>
