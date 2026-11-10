@@ -146,6 +146,7 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .ex-tab.on{border-color:var(--c);box-shadow:0 0 0 1px var(--c),0 10px 30px -10px var(--c);background:linear-gradient(180deg,color-mix(in srgb,var(--c) 14%,var(--card)),var(--card))}
 .ex-ic{font-size:26px}
 .ex-n{font-weight:700;font-size:14px}
+.ex-st{font-style:normal;font-size:12px;color:var(--fire2);font-weight:800}
 .ex-v{font-family:var(--num);font-size:24px;color:var(--c);letter-spacing:.5px;line-height:1.1}
 .ex-bar{height:5px;background:#1d2234;border-radius:9px;overflow:hidden;margin-top:4px}
 .ex-bar i{display:block;height:100%;background:var(--c);border-radius:9px}
@@ -378,6 +379,24 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
   text-shadow:0 0 14px var(--fire);animation:xpup 1.3s ease-out forwards}
 @keyframes xpup{to{transform:translate(-50%,-90px);opacity:0}}
 .xp-t{color:var(--fire2)}
+
+/* hareket zincirleri */
+.exc-list{display:grid;gap:12px}
+.exc{border-left:4px solid var(--c);padding:14px 18px 6px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 9%,var(--card)),var(--card) 45%)}
+.exc-h{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.exc-ic{font-size:28px;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 18%,transparent)}
+.exc-n{flex:1;min-width:120px}
+.exc-n b{display:block;font-size:16px}
+.exc-n span{font-size:12px;font-weight:600}
+.exc-ok{color:var(--c)} .exc-wait{color:var(--fire2)} .exc-broke{color:var(--down)}
+.exc-s{text-align:center;line-height:1}
+.exc-s b{display:block;font-family:var(--num);font-size:46px;color:var(--c);text-shadow:0 0 18px color-mix(in srgb,var(--c) 60%,transparent)}
+.exc-s small{font-size:11px;color:var(--mute)}
+.exc-m{display:flex;gap:14px;font-size:12px;color:var(--mute)}
+.exc-m b{color:var(--text);font-family:var(--num);font-size:18px;margin-left:3px}
+.exc-chain{margin:6px -18px 0;padding:6px 18px 2px}
+.exc-chain .chain{width:100%;height:auto;min-width:620px}
+@media (max-width:700px){.exc-m{width:100%;justify-content:space-between}}
 
 /* yedek */
 .bk{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}

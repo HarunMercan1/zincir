@@ -97,9 +97,26 @@ function dayState(d) {
   return (!f || d < f) ? 'none' : 'miss';
 }
 
-function chainSegments() {
+// tek bir hareketin günlük durumu (hareket zinciri için)
+function exDayState(d, id) {
+  if (Store.sets(d, id).length) return 'full';
+  const t = today();
+  if (d === t) return 'today';
+  if (d > t) return 'future';
+  const f = exDays(id)[0];
+  return (!f || d < f) ? 'none' : 'miss';
+}
+
+function exStreakInfo(id) {
+  const segs = chainSegments(exDays(id)), t = today(), last = segs[segs.length-1];
+  const alive = !!last && (last.end === t || last.end === addDays(t, -1));
+  return {cur: alive ? last.len : 0, alive, doneToday: !!Store.sets(t, id).length,
+    best: Math.max(0, ...segs.map(s => s.len)), days: exDays(id).length, breaks: Math.max(0, segs.length - 1) + (last && !alive ? 1 : 0)};
+}
+
+function chainSegments(days = workedDays()) {
   const out = []; let cur = null;
-  for (const d of workedDays()) {
+  for (const d of days) {
     if (cur && addDays(cur.end, 1) === d) { cur.end = d; cur.len++; }
     else { cur = {start:d, end:d, len:1}; out.push(cur); }
   }

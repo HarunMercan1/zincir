@@ -9,15 +9,19 @@ const PAL = {
   miss:   ['#a06060','#6a2f2f','#401a1a','#200c0c'],
 };
 
-function chainDefs(uid) {
+const mixHex = (a, b, t) => '#' + [1, 3, 5].map(i => Math.round(parseInt(a.substr(i, 2), 16) * (1 - t) + parseInt(b.substr(i, 2), 16) * t).toString(16).padStart(2, '0')).join('');
+
+// color verilirse "yapılan gün" halkaları o hareketin renginde parlar
+function chainDefs(uid, color) {
   let s = '<defs>';
-  for (const [k, c] of Object.entries(PAL)) {
+  const pal = color ? {...PAL, full: [mixHex(color, '#ffffff', .7), mixHex(color, '#ffffff', .25), color, mixHex(color, '#000000', .55)]} : PAL;
+  for (const [k, c] of Object.entries(pal)) {
     s += `<linearGradient id="${uid}${k}" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="${c[0]}"/><stop offset=".3" stop-color="${c[1]}"/>
       <stop offset=".7" stop-color="${c[2]}"/><stop offset="1" stop-color="${c[3]}"/></linearGradient>`;
   }
   s += `<filter id="${uid}glow" x="-30%" y="-60%" width="160%" height="220%">
-      <feGaussianBlur stdDeviation="7" result="b"/><feFlood flood-color="#ff7a00" flood-opacity=".75"/>
+      <feGaussianBlur stdDeviation="7" result="b"/><feFlood flood-color="${color || '#ff7a00'}" flood-opacity=".75"/>
       <feComposite in2="b" operator="in"/><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     <filter id="${uid}sh"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#000" flood-opacity=".7"/></filter>
   </defs>`;
@@ -65,24 +69,46 @@ function sideLink(x, cy, st, uid) {
 
 // days: tarih dizisi (eskiden yeniye). Sonuç: svg string
 let chainUid = 0;
-function chainSVG(days, {labels = true} = {}) {
+// ex verilirse o hareketin zinciri çizilir (o gün o hareket yapıldı mı)
+function chainSVG(days, {labels = true, ex = null, scale = .62} = {}) {
   const uid = 'c' + (chainUid++), {L, H, P} = LINK, cy = H/2 + 14;
   const W = L + (days.length - 1) * P + 20, Hh = labels ? H + 74 : H + 30;
   const xs = days.map((_, i) => 10 + L/2 + i*P);
-  const st = days.map(dayState);
+  const st = days.map(d => ex ? exDayState(d, ex.id) : dayState(d));
+  const hot = ex ? ex.color : '#ffc145';
   let faces = '', sides = '', lab = '';
   days.forEach((d, i) => {
     const part = i % 2 === 0 ? faceLink(xs[i], cy, st[i], uid) : sideLink(xs[i], cy, st[i], uid);
-    const wrap = `<g class="lk" data-d="${d}"><title>${fmtLong(d)} · ${doneCount(d)}/5 hareket</title>${part}</g>`;
+    const s = ex ? Store.sets(d, ex.id) : null;
+    const tip = ex ? `${ex.name} · ${s.length ? s.join(' · ') + ` (${ex.timed ? fmtSec(sum(s)) : sum(s) + ' tekrar'})` : 'yapılmadı'}` : `${doneCount(d)}/5 hareket`;
+    const wrap = `<g class="lk" data-d="${d}"${ex ? ` data-ex="${ex.id}"` : ''}><title>${fmtLong(d)} · ${tip}</title>${part}</g>`;
     i % 2 === 0 ? faces += wrap : sides += wrap;
     if (labels) {
-      const t = d === today(), col = t ? '#fff' : st[i] === 'full' ? '#ffc145' : st[i] === 'miss' ? '#c06060' : '#6b7390';
-      lab += `<text x="${xs[i]}" y="${cy+H/2+30}" text-anchor="middle" font-size="13" fill="${col}" font-weight="${t?800:500}">${WD[wdIdx(d)]}</text>
+      const t = d === today(), col = t ? '#fff' : st[i] === 'full' ? hot : st[i] === 'miss' ? '#c06060' : '#6b7390';
+      lab += `<text x="${xs[i]}" y="${cy+H/2+30}" text-anchor="middle" font-size="13" fill="${col}" font-weight="${t?800:500}">${ex && s.length ? (ex.timed ? sum(s) + 'sn' : sum(s)) : WD[wdIdx(d)]}</text>
         <text x="${xs[i]}" y="${cy+H/2+50}" text-anchor="middle" font-size="17" fill="${col}" font-weight="800">${+d.slice(8)}</text>`;
     }
   });
   // yan halkalar üstte: düz halkaların deliğinden geçiyormuş gibi görünür
-  return `<svg viewBox="0 0 ${W} ${Hh}" width="${W*0.62}" height="${Hh*0.62}" class="chain">${chainDefs(uid)}${faces}${sides}${lab}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${Hh}" width="${W*scale}" height="${Hh*scale}" class="chain">${chainDefs(uid, ex && ex.color)}${faces}${sides}${lab}</svg>`;
+}
+
+function exChainsHTML(t) {
+  const N = 21, days = []; for (let i = N-1; i >= 0; i--) days.push(addDays(t, -i));
+  return EX.map(e => {
+    const s = exStreakInfo(e.id), total30 = days.filter(d => Store.sets(d, e.id).length).length;
+    const status = s.doneToday ? '<span class="exc-ok">✓ bugün tamam</span>'
+      : s.cur ? '<span class="exc-wait">⏳ bugün bekliyor</span>' : s.days ? '<span class="exc-broke">💥 koptu</span>' : '';
+    return `<div class="card exc" style="--c:${e.color}">
+      <div class="exc-h">
+        <span class="exc-ic">${e.icon}</span>
+        <div class="exc-n"><b>${e.name}</b>${status}</div>
+        <div class="exc-s"><b>${s.cur}</b><small>gün 🔥</small></div>
+        <div class="exc-m"><span>En uzun <b>${s.best}</b></span><span>Kırılma <b>${s.breaks}</b></span><span>21 günde <b>${total30}</b></span></div>
+      </div>
+      <div class="chain-scroll exc-chain">${chainSVG(days, {ex: e, scale: .42})}</div>
+    </div>`;
+  }).join('');
 }
 
 const MILESTONES = [3, 7, 14, 21, 30, 50, 75, 100, 150, 200, 365];
@@ -123,6 +149,9 @@ function renderChainTab(el) {
     ${kpi(workedDays().filter(d => dayState(d) === 'full').length, '5/5 tam gün', '✅')}
   </div>
 
+  <h2>Hareket zincirleri</h2>
+  <div class="exc-list">${exChainsHTML(t)}</div>
+
   <h2>Hedef yolu</h2>
   <div class="road">${MILESTONES.map(m => `<div class="node ${s.best >= m ? 'on' : ''} ${m === next ? 'next' : ''}"><div class="dot">${s.best >= m ? '🔥' : m === next ? '🎯' : '🔒'}</div><b>${m}</b><small>gün</small></div>`).join('<div class="road-line"></div>')}</div>
 
@@ -146,8 +175,11 @@ function renderChainTab(el) {
   el.insertAdjacentHTML('beforeend', '<h2>Veri ve yedek</h2><div id="backup"></div>');
   renderBackup(el.querySelector('#backup'));
 
-  const sc = el.querySelector('#chainScroll'); sc.scrollLeft = sc.scrollWidth;
-  el.querySelectorAll('[data-d]').forEach(n => n.addEventListener('click', () => openDay(n.dataset.d)));
+  el.querySelectorAll('.chain-scroll').forEach(sc => sc.scrollLeft = sc.scrollWidth);
+  el.querySelectorAll('[data-d]').forEach(n => n.addEventListener('click', () => {
+    if (n.dataset.ex) { App.ex = n.dataset.ex; Log.val = null; }
+    openDay(n.dataset.d);
+  }));
   updateStatus();
 }
 

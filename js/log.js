@@ -43,7 +43,7 @@ function renderLog(el) {
       const p = xp ? Math.min(1, xt / xp) : (xt ? 1 : 0);
       return `<button class="ex-tab ${x.id === e.id ? 'on' : ''} ${xt ? 'done' : ''}" data-ex="${x.id}" style="--c:${x.color}">
         <span class="ex-ic">${x.icon}</span>
-        <span class="ex-n">${x.name}</span>
+        <span class="ex-n">${x.name}${exStreakInfo(x.id).cur ? ` <em class="ex-st">🔥${exStreakInfo(x.id).cur}</em>` : ''}</span>
         <span class="ex-v">${xt ? (x.timed ? fmtSec(xt) : xt) : '—'}${xt && xp && xt > xp ? ' 🏆' : ''}</span>
         <span class="ex-bar"><i style="width:${p * 100}%"></i></span>
         ${xt ? '<span class="ex-ok">✓</span>' : ''}
