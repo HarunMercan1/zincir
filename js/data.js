@@ -28,7 +28,7 @@ const sum = a => a.reduce((x, y) => x + y, 0);
 const avg = a => a.length ? sum(a) / a.length : 0;
 const today = () => ymd(new Date());
 const fmtSec = s => s >= 3600 ? `${Math.floor(s/3600)} sa ${Math.floor(s%3600/60)} dk`
-  : s >= 60 ? `${Math.floor(s/60)}:${pad(s%60)}` : `${s} sn`;
+  : s >= 600 ? `${Math.floor(s/60)} dk${s%60 ? ` ${s%60} sn` : ''}` : `${s} sn`;
 
 function demoData() {
   const o = {}; let seed = 11;
