@@ -268,12 +268,8 @@ function renderExStats(el, e) {
     <div><h2>Rekor merdiveni</h2><div class="card chc"><p class="how">Çubuk = o günün en iyi seti. <b class="gold">Sarı çubuk</b> = o gün rekor kırıldı, sarı çizgi = o güne kadarki rekor.</p>
       <div class="ch h260"><div class="chi"><canvas id="cPR"></canvas></div></div></div></div>
   </div>
-  <div class="grid2">
-    <div><h2>Yorgunluk eğrisi</h2><div class="card chc"><p class="how">${few(s.length, 3)}Her setin ortalaması. Setler arasında ne kadar düştüğünü gösterir. Düşüş azaldıkça dayanıklılığın artıyor demektir.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cFat"></canvas></div></div></div></div>
-    <div><h2>Setlerin hangi aralıkta</h2><div class="card chc"><p class="how">${few(all.length, 10, 'set')}Tüm setlerin kaçar tane hangi değer aralığına düştü. Çubuklar sağa kaydıkça güçleniyorsun.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cHist"></canvas></div></div></div></div>
-  </div>
+  <h2>Yorgunluk eğrisi</h2><div class="card chc"><p class="how">${few(s.length, 3)}Her setin ortalaması. Setler arasında ne kadar düştüğünü gösterir. Düşüş azaldıkça dayanıklılığın artıyor demektir.</p>
+      <div class="ch h260"><div class="chi"><canvas id="cFat"></canvas></div></div></div>
 
   <h2>İlk antrenman vs son antrenman</h2>
   <div class="card vs" style="--c:${e.color}">${vsHTML(e, done[0], done[done.length - 1])}${ongoing ? '<p class="muted" style="margin-top:8px;font-size:12px">Bugünkü antrenman devam ettiği için son tamamlanan antrenmanla karşılaştırıldı.</p>' : ''}</div>
@@ -322,12 +318,6 @@ function renderExStats(el, e) {
     backgroundColor: posAvg.map((_, i) => SETC[i]), borderRadius: 8}]},
     options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
 
-  // dağılım
-  const lo = Math.min(...all), hi = Math.max(...all), bins = Math.min(8, Math.max(3, hi - lo + 1)), bw = Math.max(1, Math.ceil((hi - lo + 1) / bins));
-  const hb = Array.from({length: Math.ceil((hi - lo + 1) / bw)}, (_, i) => lo + i * bw);
-  chart('cHist', {type: 'bar', data: {labels: hb.map(b => bw > 1 ? `${b}–${b + bw - 1}` : `${b}`), datasets: [{label: 'Set sayısı', data: hb.map(b => all.filter(v => v >= b && v < b + bw).length),
-    backgroundColor: hb.map((_, i) => alpha(e.color, .35 + .65 * i / Math.max(1, hb.length - 1))), borderRadius: 4}]},
-    options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}, title: {display: true, text: e.unit}}, y: {beginAtZero: true, ticks: {precision: 0}, title: {display: true, text: 'set sayısı'}}}}});
   exExtraCharts(e, s);
 }
 
