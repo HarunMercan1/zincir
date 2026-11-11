@@ -6,14 +6,15 @@ const wkLabel = w => `${fmtD(w)} – ${fmtD(addDays(w, 6))}`;
 const dTag = (a, b) => b ? deltaTag(a - b) : '';
 
 /* ---------- GENEL BAKIŞ EKLERİ ---------- */
-function ovExtraHTML() {
-  const t = today(), all = workedDays();
+function ovExtraHTML(all = workedDays()) {
+  const t = today(), cw = addDays(t, -wdIdx(t));
   const weeks = weekList(10).filter((w, i, arr) => all.some(d => inWeek(d, w)) || i === arr.length - 1);
-  const rows = weeks.map(w => {
-    const ds = all.filter(d => inWeek(d, w));
-    return {w, n: ds.length, sets: sum(ds.map(d => sum(EX.map(e => Store.sets(d, e.id).length)))), full: ds.filter(d => doneCount(d) === 5).length,
-      tot: Object.fromEntries(EX.map(e => [e.id, sum(ds.map(d => total(d, e.id)))]))};
-  });
+  const mk = ds => ({n: ds.length, sets: sum(ds.map(d => sum(EX.map(e => Store.sets(d, e.id).length)))), full: ds.filter(d => doneCount(d) === 5).length,
+    tot: Object.fromEntries(EX.map(e => [e.id, sum(ds.map(d => total(d, e.id)))]))});
+  const rows = weeks.map(w => ({w, ...mk(all.filter(d => inWeek(d, w)))}));
+  // bu hafta henüz bitmedi: geçen haftanın aynı noktasıyla kıyasla
+  const curRow = rows.find(r => r.w === cw);
+  if (curRow) curRow.cmp = mk(all.filter(d => d >= addDays(cw, -7) && d <= addDays(t, -7)));
   const maxT = Object.fromEntries(EX.map(e => [e.id, Math.max(1, ...rows.map(r => r.tot[e.id]))]));
 
   // rekorlar
@@ -29,10 +30,10 @@ function ovExtraHTML() {
 
   return `
   <h2>Haftalık özet</h2>
-  <div class="card tbl-wrap"><p class="how">Her satır bir hafta. Hareket sütunlarında o haftanın toplamı, yanında bir önceki haftaya göre fark. Renk koyulaştıkça o hareketin en iyi haftasına yaklaşıyorsun.</p>
+  <div class="card tbl-wrap"><p class="how">Her satır bir hafta. Hareket sütunlarında o haftanın toplamı, yanında bir önceki haftaya göre fark (bu hafta için: geçen haftanın aynı noktasına göre). Renk koyulaştıkça o hareketin en iyi haftasına yaklaşıyorsun.</p>
   <table class="tbl htbl"><thead><tr><th>Hafta</th><th>Gün</th><th>Set</th><th>5/5</th>${EX.map(e => `<th style="color:${e.color}">${e.icon} ${e.name}</th>`).join('')}</tr></thead>
-  <tbody>${[...rows].reverse().map((r, i, arr) => { const p = arr[i + 1]; return `<tr class="${r.w === weeks[weeks.length - 1] ? 'cur' : ''}">
-    <td><b>${wkLabel(r.w)}</b>${r.w === weeks[weeks.length - 1] ? ' <small>bu hafta</small>' : ''}</td>
+  <tbody>${[...rows].reverse().map((r, i, arr) => { const p = r.cmp || arr[i + 1]; return `<tr class="${r.w === cw ? 'cur' : ''}">
+    <td><b>${wkLabel(r.w)}</b>${r.w === cw ? ' <small>bu hafta</small>' : ''}</td>
     <td>${r.n}<small>/7</small></td><td>${r.sets} ${dTag(r.sets, p && p.sets)}</td><td>${r.full ? '⭐'.repeat(Math.min(r.full, 7)) : '—'}</td>
     ${EX.map(e => `<td style="${heatBg(r.tot[e.id], maxT[e.id], e.color)}"><b>${r.tot[e.id] ? fmtV(e.id, r.tot[e.id]) : '—'}</b> ${p ? dTag(r.tot[e.id], p.tot[e.id]) : ''}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
 
@@ -42,8 +43,8 @@ function ovExtraHTML() {
       <tbody>${prs.map(p => `<tr><td style="color:${p.e.color}"><b>${p.e.icon} ${p.e.name}</b></td>
         <td><b class="gold">${p.best ? fmtV(p.e.id, p.best) : '—'}</b><small> ${p.bd ? fmtD(p.bd) : ''}</small></td>
         <td>${p.bestDay ? `<b>${fmtV(p.e.id, p.bestDay.v)}</b><small> ${fmtD(p.bestDay.d)}</small>` : '—'}</td>
-        <td>${p.cnt ? p.cnt + ' 🏆' : '—'}</td><td>${p.lastPR ? `${diffDays(p.lastPR, t)} gün önce` : '—'}</td></tr>`).join('')}</tbody></table></div></div>
-    <div><h2>Rekor zaman çizelgesi</h2><div class="card chc"><p class="how">Her nokta bir rekor kırılan gün. Boşluklar uzadıkça platoya giriyorsun demektir.</p>
+        <td>${p.cnt ? p.cnt + ' 🏆' : '—'}</td><td>${p.lastPR ? ago(p.lastPR) : '—'}</td></tr>`).join('')}</tbody></table></div></div>
+    <div><h2>Rekor zaman çizelgesi</h2><div class="card chc"><p class="how">${few(all.length, 3, 'antrenman gün')}Her nokta bir rekor kırılan gün (ilk gün sayılmaz). Boşluklar uzadıkça platoya giriyorsun demektir.</p>
       <div class="ch h260"><div class="chi"><canvas id="cPRt"></canvas></div></div></div></div>
   </div>
 
@@ -54,15 +55,15 @@ function ovExtraHTML() {
     ${wdAvg[i].map(v => `<td style="${heatBg(v, mx, e.color)}">${v ? fmtV(e.id, v) : '·'}</td>`).join('')}<td><b>${wdAvg[i][bi] ? WD[bi] : '—'}</b></td></tr>`; }).join('')}</tbody></table></div>
 
   <div class="grid2">
-    <div><h2>Hacim payı · hafta hafta</h2><div class="card chc"><p class="how">Her hafta setlerinin yüzde kaçı hangi harekete gitti. Bir renk büyüyorsa ona ağırlık veriyorsun.</p>
+    <div><h2>Hacim payı · hafta hafta</h2><div class="card chc"><p class="how">${few(weeks.length, 2, 'hafta')}Her hafta setlerinin yüzde kaçı hangi harekete gitti. Bir renk büyüyorsa ona ağırlık veriyorsun.</p>
       <div class="ch h280"><div class="chi"><canvas id="cShare"></canvas></div></div></div></div>
     <div><h2>Birikimli toplam</h2><div class="card chc"><p class="how">Başlangıçtan bu yana toplam set sayısı. Eğim dikleştikçe tempo artıyor; düz yerler atlanan günler.</p>
       <div class="ch h280"><div class="chi"><canvas id="cCum"></canvas></div></div></div></div>
   </div>`;
 }
 
-function ovExtraCharts() {
-  const all = workedDays(); if (!all.length) return;
+function ovExtraCharts(all = workedDays()) {
+  if (!all.length) return;
   const f = all[0], t = today(), span = diffDays(f, t);
   // rekor zaman çizelgesi
   const pts = EX.flatMap((e, i) => { let best = 0; const out = []; exDays(e.id).forEach(d => { const m = Math.max(...Store.sets(d, e.id)); if (m > best) { if (best) out.push({x: diffDays(f, d), y: i, v: m}); best = m; } }); return out.map(p => ({...p, e})); });
@@ -73,10 +74,11 @@ function ovExtraCharts() {
   // hacim payı
   const weeks = weekList(10).filter(w => all.some(d => inWeek(d, w)));
   const cnt = weeks.map(w => EX.map(e => sum(all.filter(d => inWeek(d, w)).map(d => Store.sets(d, e.id).length))));
-  chart('cShare', {type: 'line', data: {labels: weeks.map(w => fmtD(w)), datasets: EX.map((e, i) => ({label: e.name, data: cnt.map(c => +(c[i] / Math.max(1, sum(c)) * 100).toFixed(1)),
-    borderColor: e.color, backgroundColor: alpha(e.color, .55), fill: true, stack: 's', tension: .3, pointRadius: 0, borderWidth: 1}))},
+  const asBar = weeks.length < 3; // az haftada alan grafiği görünmez, çubuk kullan
+  chart('cShare', {type: asBar ? 'bar' : 'line', data: {labels: weeks.map(w => fmtD(w)), datasets: EX.map((e, i) => ({label: e.name, data: cnt.map(c => +(c[i] / Math.max(1, sum(c)) * 100).toFixed(1)),
+    borderColor: e.color, backgroundColor: asBar ? e.color : alpha(e.color, .55), fill: true, stack: 's', tension: .3, pointRadius: 0, borderWidth: asBar ? 0 : 1, borderRadius: 3}))},
     options: {interaction: {mode: 'index'}, plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {label: c => `${c.dataset.label}: %${c.raw}`}}},
-      scales: {x: {grid: {display: false}}, y: {stacked: true, min: 0, max: 100, ticks: {callback: v => '%' + v}}}}});
+      scales: {x: {grid: {display: false}, stacked: true}, y: {stacked: true, min: 0, max: 100, ticks: {callback: v => '%' + v}}}}});
   // birikimli
   const cds = []; for (let d = f; d <= t; d = addDays(d, 1)) cds.push(d);
   let acc = 0; const cum = cds.map(d => acc += sum(EX.map(e => Store.sets(d, e.id).length)));
@@ -106,9 +108,9 @@ function exExtraHTML(e, s) {
     <td><b>${fmtV(id, x.tot)}</b></td><td>${p ? deltaTag(x.tot - p.tot) : ''}</td></tr>`; }).join('')}</tbody></table></div>
 
   <div class="grid2">
-    <div><h2>Haftanın günleri</h2><div class="card chc"><p class="how">Günlere göre ortalama antrenman toplamı. Hangi gün daha güçlüsün?</p>
+    <div><h2>Haftanın günleri</h2><div class="card chc"><p class="how">${few(s.length, 7)}Günlere göre ortalama antrenman toplamı. Hangi gün daha güçlüsün?</p>
       <div class="ch h240"><div class="chi"><canvas id="cExWd"></canvas></div></div></div></div>
-    <div><h2>Dinlenme etkisi</h2><div class="card tbl-wrap"><p class="how">Bir önceki antrenmandan kaç gün sonra yapınca daha iyi gidiyor?${bBest ? ` Şu an en verimlisi: <b style="color:${e.color}">${bBest.l.toLowerCase()}</b>.` : ''}</p>
+    <div><h2>Dinlenme etkisi</h2><div class="card tbl-wrap"><p class="how">${few(s.length, 6)}Bir önceki antrenmandan kaç gün sonra yapınca daha iyi gidiyor?${bBest ? ` Şu an en verimlisi: <b style="color:${e.color}">${bBest.l.toLowerCase()}</b>.` : ''}</p>
       <table class="tbl"><thead><tr><th>Ara</th><th>Antrenman</th><th>Ort. toplam</th><th>Ort. en iyi set</th></tr></thead>
       <tbody>${bRows.map(r => `<tr class="${r === bBest ? 'cur' : ''}"><td><b>${r.l}</b></td><td>${r.n || '—'}</td><td>${r.n ? `<b>${fmtV(id, r.tot)}</b>` : '—'}</td><td>${r.n ? fmtV(id, r.best) : '—'}</td></tr>`).join('')}</tbody></table></div></div>
   </div>
@@ -127,8 +129,8 @@ function exExtraCharts(e, s) {
   const wd = WD.map((_, i) => { const xs = s.filter(x => wdIdx(x.d) === i); return xs.length ? +avg(xs.map(x => x.tot)).toFixed(1) : 0; });
   const mx = Math.max(...wd);
   chart('cExWd', {type: 'bar', data: {labels: WD, datasets: [{label: 'Ort. toplam', data: wd, backgroundColor: wd.map(v => v === mx ? e.color : alpha(e.color, .4)), borderRadius: 6}]},
-    options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
+    options: {plugins: {legend: {display: false}, tooltip: tipLabel(e.id)}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
   let acc = 0;
   chart('cExCum', {type: 'line', data: {labels: s.map(x => fmtD(x.d)), datasets: [{label: 'Birikimli', data: s.map(x => acc += x.tot), borderColor: e.color, backgroundColor: ctx => grad(ctx, e.color), fill: true, tension: .2, pointRadius: 3, borderWidth: 2.5}]},
-    options: {interaction: {mode: 'index', intersect: false}, plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
+    options: {interaction: {mode: 'index', intersect: false}, plugins: {legend: {display: false}, tooltip: tipLabel(e.id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
 }
