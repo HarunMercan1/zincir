@@ -5,6 +5,7 @@
   --num:'Bebas Neue', Impact, sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
+html,body{overflow-x:clip}
 body{background:var(--bg);color:var(--text);font:15px/1.45 Inter,system-ui,"Segoe UI",sans-serif;min-height:100vh;
   background-image:radial-gradient(1100px 520px at 50% -160px,#3a1a05 0%,transparent 70%),radial-gradient(800px 500px at 110% 40%,#10153a66,transparent);
   background-attachment:fixed}
@@ -422,7 +423,8 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .xp-t{color:var(--fire2)}
 
 /* hareket zincirleri */
-.exc-list{display:grid;gap:12px}
+.exc-list{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.exc{min-width:0}
 .exc{border-left:4px solid var(--c);padding:14px 18px 6px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 9%,var(--card)),var(--card) 45%)}
 .exc-h{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .exc-ic{font-size:28px;width:48px;height:48px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--c) 18%,transparent)}
