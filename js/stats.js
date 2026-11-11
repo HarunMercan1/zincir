@@ -118,6 +118,8 @@ function renderOverview(el) {
     ${kpi(Math.round(days.length / cds.length * 100) + '%', 'Katılım', '🎯', `${cds.length} günün ${days.length}'i`)}
   </div>
 
+  ${levelHTML()}
+
   <h2>Gelişim · ilk antrenmanlar → son antrenmanlar</h2>
   <div class="prog">
     ${prog.map(x => `<div class="card pg" style="--c:${x.e.color}">

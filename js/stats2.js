@@ -5,6 +5,25 @@ const heatBg = (v, max, color) => v ? `background:${alpha(color, .12 + .7 * Math
 const wkLabel = w => `${fmtD(w)} – ${fmtD(addDays(w, 6))}`;
 const dTag = (a, b) => b ? deltaTag(a - b) : '';
 
+/* ---------- SEVİYE ---------- */
+// tek setteki en iyi değere göre kaba genel kondisyon eşikleri: Başlangıç, Orta, İleri, Elit
+const LEVEL_T = {hang: [20, 45, 90, 150], plank: [30, 60, 120, 240], push: [10, 25, 45, 70], sit: [15, 30, 50, 80], pull: [1, 5, 12, 20]};
+const LEVEL_N = ['Acemi', 'Başlangıç', 'Orta', 'İleri', 'Elit'];
+function levelOf(id) {
+  const best = Math.max(0, ...exDays(id).flatMap(d => Store.sets(d, id))), t = LEVEL_T[id];
+  const lv = t.filter(x => best >= x).length, lo = lv ? t[lv - 1] : 0, hi = t[lv];
+  return {best, lv, hi, p: hi ? (best - lo) / (hi - lo) : 1};
+}
+function levelHTML() {
+  return `<h2>Seviyen</h2>
+  <div class="lvls">${EX.map(e => { const L = levelOf(e.id); return `<div class="card lvl" style="--c:${e.color}">
+    <div class="lvl-h"><span>${e.icon} ${e.name}</span><b>${LEVEL_N[L.lv]}</b></div>
+    <div class="lvl-pips">${LEVEL_N.slice(1).map((_, i) => `<i><u style="width:${i < L.lv ? 100 : i === L.lv ? Math.round(L.p * 100) : 0}%"></u></i>`).join('')}</div>
+    <small>En iyi set <b>${L.best ? fmtU(e.id, L.best) : '—'}</b>${L.hi ? ` · ${LEVEL_N[L.lv + 1]} için <b>${fmtU(e.id, L.hi - L.best)}</b> daha` : ' · zirvedesin'}</small>
+  </div>`; }).join('')}</div>
+  <p class="how lvl-note">Tek setteki en iyi değerine göre. Eşikler genel kondisyon ölçütleri, kesin değil.</p>`;
+}
+
 /* ---------- GENEL BAKIŞ EKLERİ ---------- */
 function ovExtraHTML(all = workedDays()) {
   const t = today(), cw = addDays(t, -wdIdx(t));
