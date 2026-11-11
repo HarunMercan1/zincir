@@ -1,12 +1,12 @@
 // Çevrimdışı çalışma: önce önbellekten aç, arkada güncelle.
 // Siteyi güncelleyince CACHE adını değiştir ki eski dosyalar temizlensin.
-const CACHE = 'zincir-v32';
+const CACHE = 'zincir-v33';
 const ASSETS = [
   './', './index.html', './manifest.json',
-  './css/style.css?v=31',
+  './css/style.css?v=32',
   './vendor/chart.umd.min.js',
-  './js/data.js?v=31', './js/chain.js?v=31', './js/log.js?v=31', './js/stats.js?v=31', './js/stats2.js?v=31',
-  './js/gamify.js?v=31', './js/backup.js?v=31', './js/app.js?v=31',
+  './js/data.js?v=32', './js/chain.js?v=32', './js/log.js?v=32', './js/stats.js?v=32', './js/stats2.js?v=32',
+  './js/gamify.js?v=32', './js/backup.js?v=32', './js/app.js?v=32',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png',
 ];
 

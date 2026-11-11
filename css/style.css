@@ -393,7 +393,7 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .near{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
 .nr{display:flex;gap:12px;align-items:center}
 .nr>div{flex:1}
-.nr-ic{font-size:30px}
+.nr-ic{font-size:30px;width:40px;flex:none;text-align:center}
 .nr b{display:block;font-size:14px}
 .nr small{color:var(--mute);font-size:12px}
 .nr em{font-style:normal;font-family:var(--num);font-size:26px;color:var(--fire2)}
@@ -416,6 +416,15 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .ach .ap-bar i{background:var(--tc)}
 .ach.t0 .ap-bar i{background:linear-gradient(90deg,var(--fire),var(--fire2))}
 .ap-txt{font-size:11px;color:var(--mute);margin-top:5px}
+@media (max-width:520px){
+  .ach-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .ach{padding:12px}
+  .ach-ic{font-size:26px}
+  .ach b{font-size:14px;margin-top:6px;line-height:1.25}
+  .ach small{display:block;line-height:1.3;margin-top:2px}
+  .pips{gap:3px} .pips i{width:7px;height:7px}
+  .near{grid-template-columns:minmax(0,1fr)}
+}
 
 .xp-float{position:fixed;z-index:70;transform:translate(-50%,0);font-family:var(--num);font-size:30px;color:var(--fire2);pointer-events:none;
   text-shadow:0 0 14px var(--fire);animation:xpup 1.3s ease-out forwards}
