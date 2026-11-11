@@ -58,7 +58,7 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 /* ZİNCİR */
 .chain-scroll{overflow-x:auto;margin:28px -16px 0;padding:10px 16px 6px;scrollbar-width:thin;scrollbar-color:#2a3047 transparent;
   mask-image:linear-gradient(90deg,transparent,#000 6%,#000 100%)}
-.chain{display:block;overflow:visible}
+.chain{display:block;overflow:visible;margin:0 auto}
 .lk{cursor:pointer;transition:transform .15s}
 .lk:hover{transform:translateY(-4px)}
 .pulse{animation:pl 1.3s ease-in-out infinite}
@@ -438,7 +438,6 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .exc-m{display:flex;gap:14px;font-size:12px;color:var(--mute)}
 .exc-m b{color:var(--text);font-family:var(--num);font-size:18px;margin-left:3px}
 .exc-chain{margin:6px -18px 0;padding:6px 18px 2px}
-.exc-chain .chain{width:100%;height:auto;min-width:620px}
 @media (max-width:700px){.exc-m{width:100%;justify-content:space-between}}
 
 /* yedek */

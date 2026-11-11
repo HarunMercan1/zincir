@@ -93,10 +93,18 @@ function chainSVG(days, {labels = true, ex = null, scale = .62} = {}) {
   return `<svg viewBox="0 0 ${W} ${Hh}" width="${W*scale}" height="${Hh*scale}" class="chain">${chainDefs(uid, ex && ex.color)}${faces}${sides}${lab}</svg>`;
 }
 
+// Zincir ilk antrenman gününden başlar (en fazla N gün geri); kısa ise ileriye boş halkalarla 7'ye tamamlanır.
+function chainDays(t, N) {
+  const first = streakInfo().first, back = addDays(t, -(N-1));
+  const days = []; for (let d = first && first > back ? first : back; d <= t; d = addDays(d, 1)) days.push(d);
+  while (days.length < 7) days.push(addDays(days[days.length-1], 1));
+  return days;
+}
+
 function exChainsHTML(t) {
-  const N = 21, days = []; for (let i = N-1; i >= 0; i--) days.push(addDays(t, -i));
+  const days = chainDays(t, 21);
   return EX.map(e => {
-    const s = exStreakInfo(e.id), total30 = days.filter(d => Store.sets(d, e.id).length).length;
+    const s = exStreakInfo(e.id), total30 = days.filter(d => d <= t && Store.sets(d, e.id).length).length;
     const status = s.doneToday ? '<span class="exc-ok">✓ bugün tamam</span>'
       : s.cur ? '<span class="exc-wait">⏳ bugün bekliyor</span>' : s.days ? '<span class="exc-broke">💥 koptu</span>' : '';
     return `<div class="card exc" style="--c:${e.color}">
@@ -104,7 +112,7 @@ function exChainsHTML(t) {
         <span class="exc-ic">${e.icon}</span>
         <div class="exc-n"><b>${e.name}</b>${status}</div>
         <div class="exc-s"><b>${s.cur}</b><small>gün 🔥</small></div>
-        <div class="exc-m"><span>En uzun <b>${s.best}</b></span><span>Kırılma <b>${s.breaks}</b></span><span>21 günde <b>${total30}</b></span></div>
+        <div class="exc-m"><span>En uzun <b>${s.best}</b></span><span>Kırılma <b>${s.breaks}</b></span><span>${days.filter(d => d <= t).length} günde <b>${total30}</b></span></div>
       </div>
       <div class="chain-scroll exc-chain">${chainSVG(days, {ex: e, scale: .42})}</div>
     </div>`;
@@ -117,7 +125,7 @@ function renderChainTab(el) {
   const s = streakInfo(), t = today();
   const next = MILESTONES.find(m => m > s.cur) || s.cur + 100;
   const prev = [0, ...MILESTONES].filter(m => m <= s.cur).pop();
-  const N = 30, days = []; for (let i = N-1; i >= 0; i--) days.push(addDays(t, -i));
+  const days = chainDays(t, 30);
   const rate = s.span ? Math.round(s.days / s.span * 100) : 0;
   const avgLen = s.segs.length ? (sum(s.segs.map(x => x.len)) / s.segs.length).toFixed(1) : 0;
 
@@ -175,8 +183,13 @@ function renderChainTab(el) {
   el.insertAdjacentHTML('beforeend', '<h2>Veri ve yedek</h2><div id="backup"></div>');
   renderBackup(el.querySelector('#backup'));
 
-  el.querySelectorAll('.chain-scroll').forEach(sc => sc.scrollLeft = sc.scrollWidth);
-  el.querySelectorAll('[data-d]').forEach(n => n.addEventListener('click', () => {
+  // bugünün halkası ortada görünsün
+  el.querySelectorAll('.chain-scroll').forEach(sc => {
+    const lk = sc.querySelector(`[data-d="${t}"]`); if (!lk) return;
+    const r = lk.getBoundingClientRect(), b = sc.getBoundingClientRect();
+    sc.scrollLeft += r.left + r.width/2 - (b.left + b.width/2);
+  });
+  el.querySelectorAll('[data-d]').forEach(n => n.dataset.d <= t && n.addEventListener('click', () => {
     if (n.dataset.ex) { App.ex = n.dataset.ex; Log.val = null; }
     openDay(n.dataset.d);
   }));

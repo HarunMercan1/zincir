@@ -9,7 +9,7 @@ const dTag = (a, b) => b ? deltaTag(a - b) : '';
 function ovExtraHTML(all = workedDays()) {
   const t = today(), cw = addDays(t, -wdIdx(t));
   const weeks = weekList(10).filter((w, i, arr) => all.some(d => inWeek(d, w)) || i === arr.length - 1);
-  const mk = ds => ({n: ds.length, sets: sum(ds.map(d => sum(EX.map(e => Store.sets(d, e.id).length)))), full: ds.filter(d => doneCount(d) === 5).length,
+  const mk = ds => ({n: ds.length, full: ds.filter(d => doneCount(d) === 5).length,
     tot: Object.fromEntries(EX.map(e => [e.id, sum(ds.map(d => total(d, e.id)))]))});
   const rows = weeks.map(w => ({w, ...mk(all.filter(d => inWeek(d, w)))}));
   // bu hafta henüz bitmedi: geçen haftanın aynı noktasıyla kıyasla
@@ -31,10 +31,10 @@ function ovExtraHTML(all = workedDays()) {
   return `
   <h2>Haftalık özet</h2>
   <div class="card tbl-wrap"><p class="how">Her satır bir hafta. Hareket sütunlarında o haftanın toplamı, yanında bir önceki haftaya göre fark (bu hafta için: geçen haftanın aynı noktasına göre). Renk koyulaştıkça o hareketin en iyi haftasına yaklaşıyorsun.</p>
-  <table class="tbl htbl"><thead><tr><th>Hafta</th><th>Gün</th><th>Set</th><th>5/5</th>${EX.map(e => `<th style="color:${e.color}">${e.icon} ${e.name}</th>`).join('')}</tr></thead>
+  <table class="tbl htbl"><thead><tr><th>Hafta</th><th>Gün</th><th>5/5</th>${EX.map(e => `<th style="color:${e.color}">${e.icon} ${e.name}</th>`).join('')}</tr></thead>
   <tbody>${[...rows].reverse().map((r, i, arr) => { const p = r.cmp || arr[i + 1]; return `<tr class="${r.w === cw ? 'cur' : ''}">
     <td><b>${wkLabel(r.w)}</b>${r.w === cw ? ' <small>bu hafta</small>' : ''}</td>
-    <td>${r.n}<small>/7</small></td><td>${r.sets} ${dTag(r.sets, p && p.sets)}</td><td>${r.full ? '⭐'.repeat(Math.min(r.full, 7)) : '—'}</td>
+    <td>${r.n}<small>/7</small></td><td>${r.full ? '⭐'.repeat(Math.min(r.full, 7)) : '—'}</td>
     ${EX.map(e => `<td style="${heatBg(r.tot[e.id], maxT[e.id], e.color)}"><b>${r.tot[e.id] ? fmtV(e.id, r.tot[e.id]) : '—'}</b> ${p ? dTag(r.tot[e.id], p.tot[e.id]) : ''}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
 
   <div class="grid2">
@@ -52,14 +52,7 @@ function ovExtraHTML(all = workedDays()) {
   <div class="card tbl-wrap"><p class="how">Haftanın günlerine göre ortalama antrenman toplamı. Satırdaki en koyu hücre o hareket için en verimli günün.</p>
   <table class="tbl htbl"><thead><tr><th></th>${WD.map(w => `<th>${w}</th>`).join('')}<th>En iyi</th></tr></thead>
   <tbody>${EX.map((e, i) => { const mx = Math.max(1, ...wdAvg[i]), bi = wdAvg[i].indexOf(Math.max(...wdAvg[i])); return `<tr><td style="color:${e.color}"><b>${e.icon} ${e.name}</b></td>
-    ${wdAvg[i].map(v => `<td style="${heatBg(v, mx, e.color)}">${v ? fmtV(e.id, v) : '·'}</td>`).join('')}<td><b>${wdAvg[i][bi] ? WD[bi] : '—'}</b></td></tr>`; }).join('')}</tbody></table></div>
-
-  <div class="grid2">
-    <div><h2>Hacim payı · hafta hafta</h2><div class="card chc"><p class="how">${few(weeks.length, 2, 'hafta')}Her hafta setlerinin yüzde kaçı hangi harekete gitti. Bir renk büyüyorsa ona ağırlık veriyorsun.</p>
-      <div class="ch h280"><div class="chi"><canvas id="cShare"></canvas></div></div></div></div>
-    <div><h2>Birikimli toplam</h2><div class="card chc"><p class="how">Başlangıçtan bu yana toplam set sayısı. Eğim dikleştikçe tempo artıyor; düz yerler atlanan günler.</p>
-      <div class="ch h280"><div class="chi"><canvas id="cCum"></canvas></div></div></div></div>
-  </div>`;
+    ${wdAvg[i].map(v => `<td style="${heatBg(v, mx, e.color)}">${v ? fmtV(e.id, v) : '·'}</td>`).join('')}<td><b>${wdAvg[i][bi] ? WD[bi] : '—'}</b></td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
 function ovExtraCharts(all = workedDays()) {
@@ -71,19 +64,6 @@ function ovExtraCharts(all = workedDays()) {
     options: {plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => `${c.raw.e.name}: ${c.raw.v} ${c.raw.e.unit} · ${fmtD(addDays(f, c.raw.x))}`}}},
       scales: {x: {min: 0, max: Math.max(span, 7), ticks: {callback: v => fmtD(addDays(f, Math.round(v))), maxTicksLimit: 8}, grid: {display: false}},
         y: {min: -.5, max: EX.length - .5, afterBuildTicks: sc => { sc.ticks = EX.map((_, i) => ({value: i})); }, ticks: {callback: v => EX[v] ? EX[v].icon + ' ' + EX[v].name : ''}, grid: {color: '#1a1f30'}}}}});
-  // hacim payı
-  const weeks = weekList(10).filter(w => all.some(d => inWeek(d, w)));
-  const cnt = weeks.map(w => EX.map(e => sum(all.filter(d => inWeek(d, w)).map(d => Store.sets(d, e.id).length))));
-  const asBar = weeks.length < 3; // az haftada alan grafiği görünmez, çubuk kullan
-  chart('cShare', {type: asBar ? 'bar' : 'line', data: {labels: weeks.map(w => fmtD(w)), datasets: EX.map((e, i) => ({label: e.name, data: cnt.map(c => +(c[i] / Math.max(1, sum(c)) * 100).toFixed(1)),
-    borderColor: e.color, backgroundColor: asBar ? e.color : alpha(e.color, .55), fill: true, stack: 's', tension: .3, pointRadius: 0, borderWidth: asBar ? 0 : 1, borderRadius: 3}))},
-    options: {interaction: {mode: 'index'}, plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {label: c => `${c.dataset.label}: %${c.raw}`}}},
-      scales: {x: {grid: {display: false}, stacked: true}, y: {stacked: true, min: 0, max: 100, ticks: {callback: v => '%' + v}}}}});
-  // birikimli
-  const cds = []; for (let d = f; d <= t; d = addDays(d, 1)) cds.push(d);
-  let acc = 0; const cum = cds.map(d => acc += sum(EX.map(e => Store.sets(d, e.id).length)));
-  chart('cCum', {type: 'line', data: {labels: cds.map(fmtD), datasets: [{label: 'Toplam set', data: cum, borderColor: '#ff8a1f', backgroundColor: ctx => grad(ctx, '#ff8a1f'), fill: true, stepped: true, pointRadius: 0, borderWidth: 2.5}]},
-    options: {interaction: {mode: 'index', intersect: false}, plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
 }
 
 /* ---------- HAREKET DETAYI EKLERİ ---------- */

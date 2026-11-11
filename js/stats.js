@@ -79,12 +79,8 @@ function chart(canvasId, cfg) { const c = new Chart(document.getElementById(canv
 /* ================= GENEL ================= */
 function renderOverview(el) {
   const days = workedDays().filter(inRange), cds = calDays(), t = today();
-  const allSets = days.flatMap(d => EX.flatMap(e => Store.sets(d, e.id)));
   const reps = sum(days.flatMap(d => ['push', 'sit', 'pull'].flatMap(id => Store.sets(d, id))));
   const secs = sum(days.flatMap(d => ['hang', 'plank'].flatMap(id => Store.sets(d, id))));
-  const setCnt = d => sum(EX.map(e => Store.sets(d, e.id).length));
-  const wk = from => sum(workedDays().filter(d => d >= from && d < addDays(from, 7)).map(setCnt));
-  const ws = addDays(t, -wdIdx(t)), thisW = wk(ws), lastW = sum(workedDays().filter(d => d >= addDays(ws, -7) && d <= addDays(t, -7)).map(setCnt));
   const byWd = WD.map((_, i) => days.filter(d => wdIdx(d) === i));
   const topWd = byWd.map((a, i) => [a.length, i]).sort((a, b) => b[0] - a[0])[0];
   const prog = EX.map(e => {
@@ -101,7 +97,7 @@ function renderOverview(el) {
   if (lastD) {
     const chips = EX.map(e => { const a = total(lastD, e.id), b = prevD ? total(prevD, e.id) : 0;
       return a ? `<i class="chip-ex" style="--c:${e.color}">${e.icon} ${fmtU(e.id, a)}${prevD && b ? ' ' + deltaTag(a - b) : ''}</i>` : ''; }).join('');
-    ins.push(['mid', `<b>Son antrenman ${lastD === t ? 'bugün' : ago(lastD)}</b> (${fmtD(lastD)}) · ${setCnt(lastD)} set · ${doneCount(lastD)}/5 hareket${prevD ? ', öncekine göre:' : ':'}<span class="chips-row">${chips}</span>`]);
+    ins.push(['mid', `<b>Son antrenman ${lastD === t ? 'bugün' : ago(lastD)}</b> (${fmtD(lastD)}) · ${doneCount(lastD)}/5 hareket${prevD ? ', öncekine göre:' : ':'}<span class="chips-row">${chips}</span>`]);
   }
   let prCount = 0;
   const prs7 = EX.map(e => { let best = 0, last = null; exDays(e.id).forEach(d => { const m = Math.max(...Store.sets(d, e.id)); if (m > best) { if (best && diffDays(d, t) < 7) { prCount++; last = m; } best = m; } }); return last ? `<b style="color:${e.color}">${e.name}</b> ${fmtU(e.id, last)}` : null; }).filter(Boolean);
@@ -109,17 +105,14 @@ function renderOverview(el) {
   const weak = EX.map(e => ({e, s: exStreakInfo(e.id)})).sort((a, b) => a.s.cur - b.s.cur || b.s.breaks - a.s.breaks)[0];
   const strong = EX.map(e => ({e, s: exStreakInfo(e.id)})).sort((a, b) => b.s.cur - a.s.cur)[0];
   if (weak && strong && weak.e !== strong.e) ins.push([weak.s.cur ? 'mid' : 'bad', `En sağlam zincir <b style="color:${strong.e.color}">${strong.e.name}</b> (${strong.s.cur} gün), en zayıfı <b style="color:${weak.e.color}">${weak.e.name}</b> (${weak.s.cur} gün${weak.s.breaks ? `, ${weak.s.breaks} kırılma` : ''}).`]);
-  if (lastW) ins.push([thisW >= lastW ? 'good' : 'bad', `Bu hafta şu ana kadar <b>${thisW} set</b>, geçen hafta aynı noktada ${lastW} set.`]);
   if (bestProg) ins.push(['good', `En çok gelişen hareket <b style="color:${bestProg.e.color}">${bestProg.e.name}</b>: ilk antrenmanlara göre <b>%${bestProg.p}</b> ${bestProg.p >= 0 ? 'artış' : 'düşüş'}.`]);
 
   el.innerHTML = `
   <div class="card insight">${ins.map(([c, h]) => `<p class="ins ${c}">${h}</p>`).join('')}</div>
   <div class="kpis big">
-    ${kpi(allSets.length, 'Toplam set', '🧮', `${days.length} günde`)}
     ${kpi(reps, 'Toplam tekrar', '🔁', 'şınav + mekik + barfiks')}
     ${kpi(fmtSec(secs), 'Toplam süre', '⏱', 'asılı + plank')}
-    ${kpi((allSets.length / Math.max(1, days.length)).toFixed(1), 'Set / antrenman', '📦')}
-    ${kpi(thisW, 'Bu hafta set', '📅', `geçen hafta aynı noktada: ${lastW} ${lastW ? (thisW >= lastW ? '▲' : '▼') : ''}`)}
+    ${kpi(days.length, 'Antrenman günü', '📅', `${cds.length} günde`)}
     ${kpi(WD[topWd[1]], 'En istikrarlı gün', '⭐', `${topWd[0]} antrenman`)}
     ${kpi(bestProg ? '+' + bestProg.p + '%' : '—', 'En çok gelişen', '🚀', bestProg ? bestProg.e.name : '')}
     ${kpi(Math.round(days.length / cds.length * 100) + '%', 'Katılım', '🎯', `${cds.length} günün ${days.length}'i`)}
@@ -134,15 +127,7 @@ function renderOverview(el) {
       <small class="muted">günlük toplam ${x.e.unit}</small></div>`).join('')}
   </div>
 
-  <div class="grid2">
-    <div><h2>Günlük set hacmi</h2><div class="card ch h300"><div class="chi"><canvas id="cVol"></canvas></div></div></div>
-    <div><h2>Gelişim radarı</h2><div class="card ch h300"><div class="chi"><canvas id="cRadar"></canvas></div></div></div>
-  </div>
-  <div class="grid3">
-    <div><h2>Set dağılımı</h2><div class="card ch h260"><div class="chi"><canvas id="cDough"></canvas></div></div></div>
-    <div><h2>Haftanın günleri</h2><div class="card ch h260"><div class="chi"><canvas id="cWd"></canvas></div></div></div>
-    <div><h2>Haftalık hacim</h2><div class="card ch h260"><div class="chi"><canvas id="cWeek"></canvas></div></div></div>
-  </div>
+  <h2>Gelişim radarı</h2><div class="card ch h300"><div class="chi"><canvas id="cRadar"></canvas></div></div>
   ${ovExtraHTML(days)}
   <h2>Aktivite haritası</h2>
   <div class="card"><div class="heat" id="heat"></div>
@@ -156,32 +141,12 @@ function renderOverview(el) {
       options: {plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => fmtU(x.e.id, c.raw)}}}, scales: {x: {display: false}, y: {display: false, min: 0}}, interaction: {intersect: false, mode: 'index'}}});
   });
 
-  // günlük set hacmi: yığılmış çubuk
-  chart('cVol', {type: 'bar', data: {labels: cds.map(fmtD), datasets: EX.map(e => ({label: e.name, data: cds.map(d => Store.sets(d, e.id).length), backgroundColor: e.color, borderRadius: 3, stack: 's'}))},
-    options: {plugins: {legend: {position: 'bottom'}}, scales: {x: {stacked: true, grid: {display: false}, ticks: {maxTicksLimit: 10}}, y: {stacked: true, title: {display: true, text: 'set'}}}}});
-
   // radar: gelişim %
   const rp = prog.filter(x => x.p !== null);
   chart('cRadar', {type: 'radar', data: {labels: rp.map(x => x.e.name), datasets: [
     {label: 'Başlangıç', data: rp.map(() => 100), borderColor: '#3a4058', backgroundColor: '#3a405833', pointRadius: 0, borderDash: [4, 4]},
     {label: 'Şimdi (başlangıca göre %)', data: rp.map(x => 100 + x.p), borderColor: '#ff8a1f', backgroundColor: '#ff8a1f33', pointBackgroundColor: rp.map(x => x.e.color), pointRadius: 5}]},
     options: {plugins: {legend: {position: 'bottom'}}, scales: {r: {grid: {color: '#1d2234'}, angleLines: {color: '#1d2234'}, ticks: {display: false}, pointLabels: {color: '#eef1fb', font: {size: 12, weight: 600}}, suggestedMin: 0}}}});
-
-  // donut
-  chart('cDough', {type: 'doughnut', data: {labels: EX.map(e => e.name), datasets: [{data: EX.map(e => sum(days.map(d => Store.sets(d, e.id).length))), backgroundColor: EX.map(e => e.color), borderColor: '#0f121b', borderWidth: 3, hoverOffset: 8}]},
-    options: {cutout: '62%', plugins: {legend: {position: 'bottom'}}}});
-
-  // haftanın günleri
-  chart('cWd', {type: 'bar', data: {labels: WD, datasets: [
-    {label: 'Antrenman sayısı', data: byWd.map(a => a.length), backgroundColor: '#ff8a1f', borderRadius: 6, yAxisID: 'y'},
-    {label: 'Ort. set', data: byWd.map(a => a.length ? +(avg(a.map(setCnt))).toFixed(1) : 0), type: 'line', borderColor: '#38bdf8', backgroundColor: '#38bdf8', tension: .3, yAxisID: 'y1'}]},
-    options: {plugins: {legend: {position: 'bottom'}}, scales: {x: {grid: {display: false}}, y: {beginAtZero: true, ticks: {precision: 0}}, y1: {position: 'right', grid: {display: false}, beginAtZero: true}}}});
-
-  // haftalık hacim
-  const weeks = []; for (let w = addDays(ws, -7 * 7); w <= ws; w = addDays(w, 7)) weeks.push(w);
-  chart('cWeek', {type: 'bar', data: {labels: weeks.map(w => fmtD(w)), datasets: [{label: 'Set', data: weeks.map(w => sum(workedDays().filter(d => d >= w && d < addDays(w, 7)).map(setCnt))),
-    backgroundColor: weeks.map((w, i) => i === weeks.length - 1 ? '#ffb340' : '#7a4519'), borderRadius: 6}]},
-    options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {beginAtZero: true}}}});
 
   renderHeat(el.querySelector('#heat'));
   ovExtraCharts(days);
