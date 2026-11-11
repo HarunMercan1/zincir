@@ -4,14 +4,15 @@ const BK_KEY = 'zincir-last-backup';
 function renderBackup(el) {
   let last = null; try { last = localStorage.getItem(BK_KEY); } catch (e) {}
   const days = workedDays().length, ago = last ? diffDays(last, today()) : null;
-  const warn = days >= 3 && (ago === null || ago >= 7);
+  const cloud = typeof Sync !== 'undefined' && Sync.on;
+  const warn = !cloud && days >= 3 && (ago === null || ago >= 7);
   el.innerHTML = `<div class="card bk ${warn ? 'warn' : ''}">
     <div class="bk-info">
       <span class="bk-ic">${warn ? '⚠️' : '💾'}</span>
       <div><b>${warn ? 'Yedek almanın zamanı geldi' : 'Verin güvende mi?'}</b>
-      <small>Kayıtların sadece bu tarayıcıda duruyor (${days} gün, ${sum(workedDays().map(d => sum(EX.map(e => Store.sets(d, e.id).length))))} set).
+      <small>Kayıtların ${cloud ? 'bulutta ve bu cihazda' : 'sadece bu tarayıcıda'} duruyor (${days} gün, ${sum(workedDays().map(d => sum(EX.map(e => Store.sets(d, e.id).length))))} set).
       ${last ? `Son yedek: <b>${ago === 0 ? 'bugün' : ago + ' gün önce'}</b>.` : 'Henüz hiç yedek almadın.'}
-      Tarayıcı verisini temizlersen her şey gider; ara sıra yedek indir.</small></div>
+      ${cloud ? 'İstersen ayrıca dosya olarak da yedek alabilirsin.' : 'Tarayıcı verisini temizlersen her şey gider; ara sıra yedek indir.'}</small></div>
     </div>
     <div class="bk-btns">
       <button class="bk-dl" id="bkDl">⬇ Yedek indir</button>

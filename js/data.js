@@ -62,7 +62,7 @@ const Store = {
     this.save();
   },
   save() { if (!DEMO) try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) {} },
-  emit() { this.save(); this.listeners.forEach(f => f()); },
+  emit() { this.save(); this.listeners.forEach(f => f()); if (typeof Sync !== 'undefined') Sync.schedule(); },
   sets(d, id) { return (this.data[d] && this.data[d][id]) || []; },
   addSet(d, id, v, at) {
     const r = this.data[d] = this.data[d] || {};

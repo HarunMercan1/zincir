@@ -462,6 +462,10 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .bk-dl,.bk-ul{padding:11px 18px;border-radius:12px;font-weight:700;cursor:pointer}
 .bk-dl{background:linear-gradient(135deg,var(--fire),#ff9a2a);color:#1a0a00}
 .bk-ul{background:var(--card3);border:1px solid var(--line)}
+.sy{margin-bottom:12px}
+.sy-form{display:flex;gap:8px;flex-wrap:wrap}
+.sy-form input{padding:11px 14px;border-radius:12px;background:var(--card3);border:1px solid var(--line);color:var(--text);font:inherit;min-width:0;flex:1 1 180px}
+.sy-form input[readonly]{opacity:.6}
 
 .cf{position:fixed;top:-12px;width:9px;height:14px;border-radius:2px;z-index:60;pointer-events:none;animation:fall 1.8s ease-in forwards}
 @keyframes fall{to{top:105vh;transform:rotate(720deg) translateX(40px)}}
