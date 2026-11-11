@@ -105,6 +105,7 @@ function renderOverview(el) {
   const weak = EX.map(e => ({e, s: exStreakInfo(e.id)})).sort((a, b) => a.s.cur - b.s.cur || b.s.breaks - a.s.breaks)[0];
   const strong = EX.map(e => ({e, s: exStreakInfo(e.id)})).sort((a, b) => b.s.cur - a.s.cur)[0];
   if (weak && strong && weak.e !== strong.e) ins.push([weak.s.cur ? 'mid' : 'bad', `En sağlam zincir <b style="color:${strong.e.color}">${strong.e.name}</b> (${strong.s.cur} gün), en zayıfı <b style="color:${weak.e.color}">${weak.e.name}</b> (${weak.s.cur} gün${weak.s.breaks ? `, ${weak.s.breaks} kırılma` : ''}).`]);
+  EX.forEach(e => { const A = exAnalysis(e.id); if (A.plateau) ins.push(['bad', `⏸ <b style="color:${e.color}">${e.name}</b> ${A.since} antrenmandır rekor kırmadı. ${plateauTip(e)}`]); });
   if (bestProg) ins.push(['good', `En çok gelişen hareket <b style="color:${bestProg.e.color}">${bestProg.e.name}</b>: ilk antrenmanlara göre <b>%${bestProg.p}</b> ${bestProg.p >= 0 ? 'artış' : 'düşüş'}.`]);
 
   el.innerHTML = `
@@ -119,6 +120,7 @@ function renderOverview(el) {
   </div>
 
   ${levelHTML()}
+  ${powerHTML()}
 
   <h2>Gelişim · ilk antrenmanlar → son antrenmanlar</h2>
   <div class="prog">
@@ -224,11 +226,15 @@ function renderExStats(el, e) {
   const gSet = nextGoal(best, e.timed ? 10 : 5), gTot = nextGoal(Math.max(...dtots), e.timed ? 30 : 10);
   ins.push(['goal', `🎯 Sıradaki hedefler: tek sette <b>${U(gSet.g)}${unitW}</b> (${U(gSet.left)} kaldı) · bir antrenmanda <b>${U(gTot.g)}${unitW}</b> (${U(gTot.left)} kaldı).`]);
 
+  const A = exAnalysis(id), LV = A.lvl;
+  ins.push(['mid', `Seviye <b>${LEVEL_N[LV.lv]}</b>${LV.hi ? ` · ${LEVEL_N[LV.lv + 1]} için tek sette ${U(LV.hi - LV.best)}${unitW} daha${A.eta ? `, bu tempoyla ~<b>${fmtD(A.eta)}</b>` : ''}` : ' · en üst seviye'}.`]);
+  if (A.plateau) ins.push(['bad', `⏸ Plato: <b>${A.since} antrenmandır</b> ne tek sette ne toplamda rekor yok. ${plateauTip(e)}`]);
+
   const cls = v => v === null ? '' : v > 0 ? 'good' : v < 0 ? 'bad' : '';
   el.innerHTML = `
   <div class="ex-hero card" style="--c:${e.color}">
     <div class="eh-ic">${e.icon}</div>
-    <div class="eh-main"><b>${e.name}</b><span>${s.length} antrenman · ${all.length} set · ${fmtD(s[0].d)} → ${fmtD(s[s.length - 1].d)}</span></div>
+    <div class="eh-main"><b>${e.name}</b><span>${s.length} antrenman · ${fmtD(s[0].d)} → ${fmtD(s[s.length - 1].d)}</span></div>
     <div class="eh-big gold"><small>Rekor set</small><b>${U(best)}</b><span>${fmtD(bestAt.d)}</span></div>
     <div class="eh-big ${cls(gro)}"><small>Gelişim</small><b>${gro === null ? '—' : (gro >= 0 ? '+' : '') + gro + '%'}</b><span>ilk → son antrenmanlar</span></div>
   </div>
@@ -238,7 +244,6 @@ function renderExStats(el, e) {
   <div class="tgroup"><h3>📦 Hacim <small>ne kadar yaptın</small></h3><div class="tiles">
     ${tile(U(sum(all)), 'Toplam ' + e.unit, 'tüm zamanlar')}
     ${tile(s.length, 'Antrenman', `${cds.length} günün ${s.length}'inde yaptın`)}
-    ${tile(all.length, 'Set', `antrenman başı ${avg(s.map(x => x.s.length)).toFixed(1)} set`)}
     ${tile(U(w1), 'Son 7 gün', w0 ? `önceki 7 gün: ${U(w0)}` : 'önceki 7 günde kayıt yok', w0 ? cls(w1 - w0) : '')}
   </div></div>
 
@@ -272,6 +277,8 @@ function renderExStats(el, e) {
   </div>
   <h2>Yorgunluk eğrisi</h2><div class="card chc"><p class="how">${few(s.length, 3)}Her setin ortalaması. Setler arasında ne kadar düştüğünü gösterir. Düşüş azaldıkça dayanıklılığın artıyor demektir.</p>
       <div class="ch h260"><div class="chi"><canvas id="cFat"></canvas></div></div></div>
+  <h2>Güç ve dayanıklılık</h2><div class="card chc"><p class="how">Çubuk = ilk setin (güç). Çizgi = sonraki setlerde ilk setin yüzde kaçını koruduğun (dayanıklılık). İkisi birlikte yükseliyorsa hem güçleniyorsun hem dayanıklılığın artıyor.</p>
+      <div class="ch h260"><div class="chi"><canvas id="cPow"></canvas></div></div></div>
 
   <h2>İlk antrenman vs son antrenman</h2>
   <div class="card vs" style="--c:${e.color}">${vsHTML(e, done[0], done[done.length - 1])}${ongoing ? '<p class="muted" style="margin-top:8px;font-size:12px">Bugünkü antrenman devam ettiği için son tamamlanan antrenmanla karşılaştırıldı.</p>' : ''}</div>
@@ -320,6 +327,12 @@ function renderExStats(el, e) {
     backgroundColor: posAvg.map((_, i) => SETC[i]), borderRadius: 8}]},
     options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
 
+  // güç (ilk set) ve dayanıklılık (koruma %)
+  chart('cPow', {type: 'bar', data: {labels: s.map(x => fmtD(x.d)), datasets: [
+    {label: 'İlk set', data: s.map(x => x.s[0]), backgroundColor: alpha(e.color, .55), borderRadius: 6, yAxisID: 'y'},
+    {label: 'Koruma %', data: s.map(x => x.s.length > 1 ? Math.round(avg(x.s.slice(1)) / x.s[0] * 100) : null), type: 'line', borderColor: '#eef1fb', backgroundColor: '#eef1fb', tension: .3, spanGaps: true, pointRadius: 4, yAxisID: 'y1'}]},
+    options: {plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {label: c => c.datasetIndex ? `Koruma: %${c.raw}` : `İlk set: ${fmtU(id, c.raw)}`}}},
+      scales: {x: {grid: {display: false}}, y: {beginAtZero: true, title: {display: true, text: e.unit}}, y1: {position: 'right', min: 0, max: 100, grid: {display: false}, ticks: {callback: v => '%' + v}}}}});
   exExtraCharts(e, s);
 }
 

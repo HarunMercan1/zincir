@@ -14,14 +14,60 @@ function levelOf(id) {
   const lv = t.filter(x => best >= x).length, lo = lv ? t[lv - 1] : 0, hi = t[lv];
   return {best, lv, hi, p: hi ? (best - lo) / (hi - lo) : 1};
 }
+
+/* ---------- ANALİZ: plato, güç/dayanıklılık, tempo (tüm zamanlar) ---------- */
+const PLATEAU_N = 3; // bu kadar antrenmandır rekor yoksa plato
+function exAnalysis(id) {
+  const t = today();
+  let ss = exDays(id).map(d => { const s = Store.sets(d, id); return {d, s, tot: sum(s), best: Math.max(...s), first: s[0], ret: s.length > 1 ? avg(s.slice(1)) / s[0] : null}; });
+  // bugünkü oturum öncekinden az setliyse henüz bitmemiş: hesaba katma
+  const L = ss[ss.length - 1];
+  if (L && L.d === t && ss.length > 1 && L.s.length < ss[ss.length - 2].s.length) ss = ss.slice(0, -1);
+  const n = ss.length, k = Math.max(1, Math.min(3, Math.floor(n / 3)));
+  // plato: son rekordan (tek set ya da toplam) bu yana kaç antrenman geçti
+  let bB = 0, bT = 0, lastPR = 0;
+  ss.forEach((x, i) => { if (x.best > bB || x.tot > bT) lastPR = i; bB = Math.max(bB, x.best); bT = Math.max(bT, x.tot); });
+  const since = n ? n - 1 - lastPR : 0;
+  // güç = ilk set, dayanıklılık = sonraki setlerin ilk sete oranı
+  const firsts = ss.map(x => x.first), rets = ss.filter(x => x.ret !== null).map(x => x.ret);
+  const kr = Math.max(1, Math.min(3, Math.floor(rets.length / 3)));
+  const power = n ? avg(firsts.slice(-k)) : null, powerD = n > 1 ? pct(avg(firsts.slice(-k)), avg(firsts.slice(0, k))) : null;
+  const endur = rets.length ? avg(rets.slice(-kr)) : null, endurD = rets.length > 1 ? Math.round((avg(rets.slice(-kr)) - avg(rets.slice(0, kr))) * 100) : null;
+  // tempo: tek setteki en iyinin günlere göre eğimi
+  // tempo: son 8 antrenmandaki en iyi setin günlere göre eğimi (eski dönem bugünkü hızı bozmasın)
+  const rc = ss.slice(-8), lr = n >= TREND_MIN ? linreg(rc.map(x => [diffDays(rc[0].d, x.d), x.best])) : null;
+  const perWeek = lr ? lr.m * 7 : null, perWeekP = lr ? Math.round(lr.m * 7 / Math.max(1, avg(rc.map(x => x.best))) * 100) : null;
+  const plateau = n > PLATEAU_N && since >= PLATEAU_N, L2 = levelOf(id); let eta = null;
+  if (lr && lr.m > 0 && L2.hi && !plateau) { const x = (L2.hi - lr.b) / lr.m; eta = addDays(rc[0].d, Math.max(diffDays(rc[0].d, t) + 1, Math.ceil(x))); }
+  return {ss, n, since, plateau, power, powerD, endur, endurD, perWeek, perWeekP, eta, lvl: L2};
+}
+const plateauTip = e => e.timed ? 'Bir gün tam dinlen, sonra ilk sette 5 sn fazlasını hedefle.' : 'Bir gün tam dinlen, sonra ilk sette 1 tekrar fazlasını hedefle.';
+const signed = (v, f = x => x) => (v >= 0 ? '+' : '−') + f(Math.abs(v));
+
 function levelHTML() {
   return `<h2>Seviyen</h2>
-  <div class="lvls">${EX.map(e => { const L = levelOf(e.id); return `<div class="card lvl" style="--c:${e.color}">
+  <div class="lvls">${EX.map(e => { const A = exAnalysis(e.id), L = A.lvl; return `<div class="card lvl" style="--c:${e.color}">
     <div class="lvl-h"><span>${e.icon} ${e.name}</span><b>${LEVEL_N[L.lv]}</b></div>
     <div class="lvl-pips">${LEVEL_N.slice(1).map((_, i) => `<i><u style="width:${i < L.lv ? 100 : i === L.lv ? Math.round(L.p * 100) : 0}%"></u></i>`).join('')}</div>
     <small>En iyi set <b>${L.best ? fmtU(e.id, L.best) : '—'}</b>${L.hi ? ` · ${LEVEL_N[L.lv + 1]} için <b>${fmtU(e.id, L.hi - L.best)}</b> daha` : ' · zirvedesin'}</small>
+    <small class="lvl-t">${A.perWeek === null ? `⏱ Tempo ve hedef tarihi ${TREND_MIN} antrenmandan sonra (şu an ${A.n})`
+      : `⏱ Haftada <b class="${A.perWeek >= 0 ? 'up' : 'down'}">${signed(A.perWeek, v => fmtU(e.id, v))}</b> (%${A.perWeekP})${A.eta ? ` · ${LEVEL_N[L.lv + 1]} ~<b>${fmtD(A.eta)}</b>` : !L.hi ? '' : A.plateau ? ' · tarih plato bitince' : ' · bu tempoyla sonraki seviye yok'}`}</small>
+    ${A.plateau ? `<small class="lvl-p">⏸ Plato: ${A.since} antrenmandır rekor yok. ${plateauTip(e)}</small>` : ''}
   </div>`; }).join('')}</div>
-  <p class="how lvl-note">Tek setteki en iyi değerine göre. Eşikler genel kondisyon ölçütleri, kesin değil.</p>`;
+  <p class="how lvl-note">Seviye tek setteki en iyi değerine göre; eşikler genel kondisyon ölçütleri, kesin değil. Tempo, son 8 antrenmanda en iyi setinin haftalık değişimi; tarih bu tempo sürerse tahmini.</p>`;
+}
+
+function powerHTML() {
+  const rows = EX.map(e => ({e, A: exAnalysis(e.id)})).filter(r => r.A.n);
+  if (!rows.length) return '';
+  return `<h2>Güç ve dayanıklılık</h2>
+  <div class="card tbl-wrap"><p class="how"><b>Güç</b> = ilk setin (dinçken ne yapabildiğin). <b>Dayanıklılık</b> = sonraki setlerde ilk setin yüzde kaçını koruyabildiğin. Oklar ilk antrenmanlarına göre değişim. %70'in altındaki koruma, setler arası düşüşün sert olduğunu gösterir.</p>
+  <table class="tbl"><thead><tr><th>Hareket</th><th>Güç</th><th>Dayanıklılık</th><th>Odak</th></tr></thead>
+  <tbody>${rows.map(({e, A}) => { const focus = A.endur === null ? '—' : A.endur < .7 ? '🫁 Dayanıklılık' : (A.powerD !== null && A.powerD <= 0) ? '💥 Güç' : A.endur < .85 ? '🫁 Dayanıklılık' : '💥 Güç';
+    return `<tr><td style="color:${e.color}"><b>${e.icon} ${e.name}</b></td>
+    <td><b>${fmtU(e.id, A.power)}</b> ${A.powerD === null ? '' : pctTag(A.powerD)}</td>
+    <td>${A.endur === null ? '<span class="muted">tek set</span>' : `<b>%${Math.round(A.endur * 100)}</b> ${A.endurD === null ? '' : `<span class="${A.endurD >= 0 ? 'up' : 'down'}">${A.endurD >= 0 ? '▲' : '▼'} ${Math.abs(A.endurD)} puan</span>`}`}</td>
+    <td>${focus}</td></tr>`; }).join('')}</tbody></table></div>`;
 }
 
 /* ---------- GENEL BAKIŞ EKLERİ ---------- */
