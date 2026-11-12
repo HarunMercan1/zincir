@@ -74,7 +74,7 @@ const Sync = {
   logout() { this.st = {session: null, pulled: null, base: {}}; this.keep(); this.status = 'off'; this.paint(); showAuth(); },
 
   // --- eşitleme ---
-  schedule(ms = 1500) { if (!this.on) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.run(), ms); },
+  schedule(ms = 800) { if (!this.on) return; clearTimeout(this.timer); this.timer = setTimeout(() => { this.timer = null; this.run(); }, ms); },
   async run() {
     if (!this.on) return;
     if (this.busy) { this.again = true; return; }
@@ -83,7 +83,9 @@ const Sync = {
       const changed = await this.pull();
       await this.push();
       this.status = 'ok'; this.err = null; this.last = new Date();
-      if (changed) { Store.save(); render(); }
+      if (changed) Store.save();
+      // sayı yazılırken ekranı yeniden çizip yazılanı silme; yazma bitince çiz
+      if (changed || this.stale) { const typing = document.activeElement && document.activeElement.tagName === 'INPUT'; this.stale = typing; if (!typing) render(); }
     } catch (e) {
       this.status = navigator.onLine ? 'err' : 'offline'; this.err = e.message;
     }
@@ -206,4 +208,10 @@ function showAuth(mode = 'login') {
 
 Sync.load();
 addEventListener('online', () => Sync.run());
-document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && Sync.run());
+// ekrana dönünce çek; uygulama arka plana atılırken bekleyen kaydı hemen gönder
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') Sync.run();
+  else if (Sync.timer) { clearTimeout(Sync.timer); Sync.run(); }
+});
+// açıkken öbür cihazın girdiklerini de getir (sorgu sadece yeni satırları ister, ucuz)
+setInterval(() => { if (document.visibilityState === 'visible' && !Sync.busy) Sync.run(); }, 15000);
