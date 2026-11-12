@@ -38,25 +38,40 @@ const Sync = {
     return this.st.session.access;
   },
 
-  // --- giriş: e-postaya link gelir, link uygulamayı #access_token=… ile geri açar ---
-  sendLink(email) {
-    const back = location.origin + location.pathname;
-    return this.api('/auth/v1/otp?redirect_to=' + encodeURIComponent(back), {method: 'POST', body: JSON.stringify({email, create_user: true})}, false);
+  // --- giriş: e-posta + şifre ---
+  enter(b) {
+    this.setSession(b);
+    this.st.pulled = null; this.st.base = {}; this.keep();   // yeni bağlanan cihaz: önce buluttakini al
+    hideAuth(); this.run();
   },
+  async login(email, password) {
+    this.enter(await this.api('/auth/v1/token?grant_type=password', {method: 'POST', body: JSON.stringify({email, password})}, false));
+  },
+  async signup(email, password) {
+    const b = await this.api('/auth/v1/signup', {method: 'POST', body: JSON.stringify({email, password})}, false);
+    if (!b.access_token) throw new Error('User already registered');
+    this.enter(b);
+  },
+  recover(email) {
+    const back = location.origin + location.pathname;
+    return this.api('/auth/v1/recover?redirect_to=' + encodeURIComponent(back), {method: 'POST', body: JSON.stringify({email})}, false);
+  },
+  setPassword(password) { return this.api('/auth/v1/user', {method: 'PUT', body: JSON.stringify({password})}); },
+  // e-postadaki şifre sıfırlama linkinden dönüş: #access_token=…&type=recovery
   async fromLink() {
     const h = new URLSearchParams(location.hash.slice(1));
     if (!h.get('access_token') && !h.get('error_description')) return;
     history.replaceState(null, '', location.pathname + location.search);
-    if (h.get('error_description')) { toast('❌ Giriş linki: ' + h.get('error_description')); return; }
+    if (h.get('error_description')) { this.linkErr = h.get('error_description'); return; }
     try {
       const at = h.get('access_token');
       const user = await (await fetch(SB_URL + '/auth/v1/user', {headers: {apikey: SB_KEY, Authorization: 'Bearer ' + at}})).json();
       this.setSession({access_token: at, refresh_token: h.get('refresh_token'), expires_in: +h.get('expires_in') || 3600, user});
-      this.st.pulled = null; this.st.base = {}; this.keep();   // yeni bağlanan cihaz: önce buluttakini al
-      toast('☁️ Giriş yapıldı: ' + user.email);
-    } catch (e) { toast('❌ Giriş tamamlanamadı: ' + e.message); }
+      this.st.pulled = null; this.st.base = {}; this.keep();
+      if (h.get('type') === 'recovery') this.recovering = true;
+    } catch (e) { this.linkErr = e.message; }
   },
-  logout() { this.st = {session: null, pulled: null, base: {}}; this.keep(); this.status = 'off'; this.paint(); },
+  logout() { this.st = {session: null, pulled: null, base: {}}; this.keep(); this.status = 'off'; this.paint(); showAuth(); },
 
   // --- eşitleme ---
   schedule(ms = 1500) { if (!this.on) return; clearTimeout(this.timer); this.timer = setTimeout(() => this.run(), ms); },
@@ -115,26 +130,7 @@ const Sync = {
 function renderSync(el) {
   if (DEMO) { el.innerHTML = ''; return; }
   const s = Sync.st.session;
-  if (!s) {
-    el.innerHTML = `<div class="card bk sy">
-      <div class="bk-info"><span class="bk-ic">☁️</span><div><b>Telefon ve bilgisayar aynı veriyi görsün</b>
-        <small id="syMsg">E-postanla giriş yap; kayıtların buluta yedeklenir ve giriş yaptığın her cihazda görünür.</small></div></div>
-      <form class="sy-form" id="syForm">
-        <input type="email" id="syEmail" placeholder="e-posta adresin" required autocomplete="email">
-        <button class="bk-dl" id="syBtn">Giriş linki gönder</button>
-      </form></div>`;
-    const f = el.querySelector('#syForm'), em = f.querySelector('#syEmail'), btn = f.querySelector('#syBtn');
-    f.onsubmit = async ev => {
-      ev.preventDefault(); btn.disabled = true;
-      try {
-        await Sync.sendLink(em.value.trim());
-        el.querySelector('#syMsg').innerHTML = `📧 <b>${em.value.trim()}</b> adresine link gönderildi. E-postadaki linke <b>bu cihazda</b> tıkla; uygulama açılıp giriş yapacak.`;
-        toast('📧 Giriş linki gönderildi');
-      } catch (e) { toast('❌ ' + e.message); }
-      btn.disabled = false;
-    };
-    return;
-  }
+  if (!s) { el.innerHTML = ''; return; }
   const txt = {busy: 'Eşitleniyor…', ok: 'Eşitlendi' + (Sync.last ? ' · ' + Sync.last.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) : ''),
     err: 'Eşitlenemedi: ' + Sync.err, offline: 'İnternet yok; bağlanınca eşitlenecek', off: ''}[Sync.status] || '';
   el.innerHTML = `<div class="card bk sy">
@@ -142,7 +138,63 @@ function renderSync(el) {
       <small><b>${s.email}</b> · ${txt}</small></div></div>
     <div class="bk-btns"><button class="bk-ul" id="syNow">↻ Şimdi eşitle</button><button class="bk-ul" id="syOut">Çıkış</button></div></div>`;
   el.querySelector('#syNow').onclick = () => Sync.run();
-  el.querySelector('#syOut').onclick = () => { if (confirm('Bu cihazda buluttan çıkılsın mı? Kayıtların bu cihazda kalır.')) Sync.logout(); };
+  el.querySelector('#syOut').onclick = () => { if (confirm('Bu cihazda hesaptan çıkılsın mı?')) Sync.logout(); };
+}
+
+// --- giriş ekranı (zorunlu) ---
+const AUTH_ERR = {
+  'Invalid login credentials': 'E-posta veya şifre yanlış.',
+  'User already registered': 'Bu e-postayla zaten hesap var. Giriş yap; şifren yoksa "Şifremi unuttum".',
+  'Password should be at least 6 characters.': 'Şifre en az 6 karakter olmalı.',
+  'Unable to validate email address: invalid format': 'E-posta adresi geçersiz.',
+};
+const authMsg = e => AUTH_ERR[e.message] || (e.status === 429 ? 'Çok fazla deneme; biraz bekleyip tekrar dene.'
+  : navigator.onLine ? e.message : 'İnternet bağlantısı yok.');
+
+function hideAuth() { const a = document.getElementById('auth'); a.hidden = true; a.innerHTML = ''; document.body.classList.remove('locked'); }
+
+function showAuth(mode = 'login') {
+  const a = document.getElementById('auth');
+  a.hidden = false; document.body.classList.add('locked');
+  const T = {
+    login:  {h: 'Giriş yap', btn: 'Giriş yap', pw: true},
+    signup: {h: 'Hesap oluştur', btn: 'Hesap oluştur', pw: true},
+    forgot: {h: 'Şifremi unuttum', btn: 'Sıfırlama linki gönder', pw: false},
+    newpw:  {h: 'Yeni şifreni belirle', btn: 'Şifreyi kaydet', pw: true},
+  }[mode];
+  const tabs = mode === 'login' || mode === 'signup';
+  a.innerHTML = `<div class="auth-box">
+    <div class="auth-brand"><span>⛓</span> ZİNCİRİ KIRMA</div>
+    <p class="auth-sub">Kayıtların hesabında durur; telefonda ve bilgisayarda aynısını görürsün.</p>
+    ${tabs ? `<div class="auth-tabs">
+      <button type="button" data-m="login" class="${mode === 'login' ? 'on' : ''}">Giriş yap</button>
+      <button type="button" data-m="signup" class="${mode === 'signup' ? 'on' : ''}">Hesap oluştur</button></div>` : `<h3>${T.h}</h3>`}
+    <form id="authForm">
+      ${mode === 'newpw' ? `<p class="auth-note">${Sync.st.session.email}</p>` : '<input type="email" id="auEmail" placeholder="E-posta" required autocomplete="email">'}
+      ${T.pw ? `<input type="password" id="auPw" placeholder="${mode === 'login' ? 'Şifre' : 'Şifre (en az 6 karakter)'}" required minlength="6" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}">` : ''}
+      <p class="auth-err" id="auErr"></p>
+      <button class="auth-go" id="auGo">${T.btn}</button>
+    </form>
+    ${mode === 'login' ? '<button type="button" class="auth-link" data-m="forgot">Şifremi unuttum</button>' : ''}
+    ${mode === 'forgot' ? '<button type="button" class="auth-link" data-m="login">← Girişe dön</button>' : ''}
+  </div>`;
+  a.querySelectorAll('[data-m]').forEach(b => b.onclick = () => showAuth(b.dataset.m));
+  const f = a.querySelector('#authForm'), go = a.querySelector('#auGo'), err = a.querySelector('#auErr');
+  const em = a.querySelector('#auEmail'), pw = a.querySelector('#auPw');
+  if (Sync.linkErr) { err.textContent = 'Link geçersiz ya da süresi dolmuş: ' + Sync.linkErr; Sync.linkErr = null; }
+  f.onsubmit = async ev => {
+    ev.preventDefault(); go.disabled = true; err.className = 'auth-err'; err.textContent = '';
+    try {
+      if (mode === 'login') await Sync.login(em.value.trim(), pw.value);
+      if (mode === 'signup') await Sync.signup(em.value.trim(), pw.value);
+      if (mode === 'forgot') {
+        await Sync.recover(em.value.trim());
+        err.className = 'auth-ok'; err.textContent = '📧 E-postana link gönderildi. Linke bu cihazda tıkla, yeni şifreni belirle.';
+      }
+      if (mode === 'newpw') { await Sync.setPassword(pw.value); Sync.recovering = false; hideAuth(); toast('🔑 Şifren kaydedildi'); Sync.run(); }
+    } catch (e) { err.textContent = authMsg(e); }
+    go.disabled = false;
+  };
 }
 
 Sync.load();

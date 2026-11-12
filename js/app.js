@@ -44,7 +44,11 @@ if (DEMO) document.getElementById('demo').hidden = false;
 let startTab = 'chain';
 try { startTab = localStorage.getItem('zincir-tab') || 'chain'; } catch (e) {}
 show(startTab);
-Sync.fromLink().then(() => { Sync.paint(); Sync.run(); });
+Sync.fromLink().then(() => {
+  if (!DEMO && Sync.recovering) showAuth('newpw');
+  else if (!DEMO && !Sync.on) showAuth();
+  Sync.paint(); Sync.run();
+});
 setInterval(updateStatus, 30000);
 
 // ana ekrana eklenebilir / çevrimdışı (sadece http(s) üzerinden; dosyadan açınca atlanır)
