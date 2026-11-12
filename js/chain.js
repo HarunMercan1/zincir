@@ -180,8 +180,7 @@ function renderChainTab(el) {
   for (let d = new Date(t + 'T12:00:00'); ymd(d) >= start.slice(0, 8) + '01'; d.setMonth(d.getMonth() - 1, 1)) months.push(new Date(d));
   el.querySelector('#cal').innerHTML = months.map(m => calMonth(m)).join('');
 
-  el.insertAdjacentHTML('beforeend', '<h2>Veri ve yedek</h2><div id="sync"></div><div id="backup"></div>');
-  renderSync(el.querySelector('#sync'));
+  el.insertAdjacentHTML('beforeend', '<h2>Veri ve yedek</h2><div id="backup"></div>');
   renderBackup(el.querySelector('#backup'));
 
   // bugünün halkası ortada görünsün

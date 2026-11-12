@@ -120,26 +120,33 @@ const Sync = {
     this.keep();
   },
 
-  // --- arayüz: "Veri ve yedek" bölümündeki kart ---
+  // --- arayüz: üst sağdaki hesap düğmesi ---
   paint() {
-    const el = document.getElementById('sync'); if (el) renderSync(el);
+    renderAcct();
     const bk = document.getElementById('backup'); if (bk) renderBackup(bk);
   },
 };
 
-function renderSync(el) {
-  if (DEMO) { el.innerHTML = ''; return; }
+let acctOpen = false;
+function renderAcct() {
+  const el = document.getElementById('acct'); if (!el) return;
   const s = Sync.st.session;
-  if (!s) { el.innerHTML = ''; return; }
+  if (DEMO || !s) { el.innerHTML = ''; return; }
   const txt = {busy: 'Eşitleniyor…', ok: 'Eşitlendi' + (Sync.last ? ' · ' + Sync.last.toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) : ''),
     err: 'Eşitlenemedi: ' + Sync.err, offline: 'İnternet yok; bağlanınca eşitlenecek', off: ''}[Sync.status] || '';
-  el.innerHTML = `<div class="card bk sy">
-    <div class="bk-info"><span class="bk-ic">${Sync.status === 'err' ? '⚠️' : '☁️'}</span><div><b>Bulut eşitleme açık</b>
-      <small><b>${s.email}</b> · ${txt}</small></div></div>
-    <div class="bk-btns"><button class="bk-ul" id="syNow">↻ Şimdi eşitle</button><button class="bk-ul" id="syOut">Çıkış</button></div></div>`;
+  el.innerHTML = `<button class="acct-btn" id="acctBtn" title="${s.email}">${s.email[0].toUpperCase()}<i class="acct-dot ${Sync.status}"></i></button>
+    <div class="acct-menu" ${acctOpen ? '' : 'hidden'}>
+      <b>${s.email}</b>
+      <small>☁️ ${txt}</small>
+      <button id="syNow">↻ Şimdi eşitle</button>
+      <button id="syOut">Çıkış yap</button>
+    </div>`;
+  el.querySelector('#acctBtn').onclick = e => { e.stopPropagation(); acctOpen = !acctOpen; renderAcct(); };
+  el.querySelector('.acct-menu').onclick = e => e.stopPropagation();
   el.querySelector('#syNow').onclick = () => Sync.run();
-  el.querySelector('#syOut').onclick = () => { if (confirm('Bu cihazda hesaptan çıkılsın mı?')) Sync.logout(); };
+  el.querySelector('#syOut').onclick = () => { if (confirm('Bu cihazda hesaptan çıkılsın mı?')) { acctOpen = false; Sync.logout(); } };
 }
+document.addEventListener('click', () => { if (acctOpen) { acctOpen = false; renderAcct(); } });
 
 // --- giriş ekranı (zorunlu) ---
 const AUTH_ERR = {
