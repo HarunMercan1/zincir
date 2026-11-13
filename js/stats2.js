@@ -175,6 +175,59 @@ function recentCmpHTML(e, done) {
       <td><span class="${dB <= dA ? 'up' : 'down'}">${dB <= dA ? '▲' : '▼'} ${Math.abs(Math.round(dB - dA))} puan</span></td></tr>` : ''}</tbody></table></div>`;
 }
 
+// düzen ve form kutuları (tüm zamanlar)
+function habitHTML(e, done, best) {
+  const id = e.id, t = today(), ds = exDays(id), st = exStreakInfo(id);
+  const gaps = ds.slice(1).map((d, i) => ({d, g: diffDays(ds[i], d)}));
+  const maxGap = gaps.reduce((m, x) => x.g > m.g ? x : m, {g: 0});
+  const n30 = ds.filter(d => d > addDays(t, -30)).length, span30 = Math.min(30, diffDays(ds[0], t) + 1);
+  const last = done[done.length - 1], last3 = done.slice(-3);
+  const formL = last ? Math.round(last.best / best * 100) : null, form3 = last3.length ? Math.round(avg(last3.map(x => x.best)) / best * 100) : null;
+  const fcls = v => v === null ? '' : v >= 95 ? 'good' : v < 80 ? 'bad' : '';
+  return `<div class="tgroup"><h3>🔁 Düzen <small>ne sıklıkla yapıyorsun</small></h3><div class="tiles">
+    ${tile(st.cur + ' gün', 'Hareket zinciri', `en uzun: ${st.best} gün`, st.cur ? 'good' : 'bad')}
+    ${tile(gaps.length ? (avg(gaps.map(x => x.g))).toFixed(1).replace('.0', '') + ' gün' : '—', 'Ortalama ara', 'iki antrenman arası')}
+    ${tile(maxGap.g > 1 ? (maxGap.g - 1) + ' gün' : '—', 'En uzun ara', maxGap.g > 1 ? `${fmtD(maxGap.d)} öncesi boşluk` : 'hiç gün kaçırmadın', maxGap.g > 1 ? '' : 'good')}
+    ${tile(`${n30}/${span30}`, 'Son 30 gün', `günün %${Math.round(n30 / span30 * 100)}'inde yaptın`)}
+  </div></div>
+  <div class="tgroup"><h3>🔥 Form <small>rekoruna ne kadar yakınsın</small></h3><div class="tiles">
+    ${tile(formL === null ? '—' : '%' + formL, 'Son antrenman', last ? `en iyi set ${fmtU(id, last.best)} · rekor ${fmtU(id, best)}` : '', fcls(formL))}
+    ${tile(form3 === null ? '—' : '%' + form3, 'Son 3 antrenman', 'en iyi setlerin ortalaması / rekor', fcls(form3))}
+    ${tile(last && best > last.best ? fmtU(id, best - last.best) : '🏆', 'Rekora kalan', last && best > last.best ? 'son antrenmana göre' : 'son antrenmanda rekordasın', last && best > last.best ? '' : 'gold')}
+  </div></div>`;
+}
+
+// her set sırasının kendi rekoru (tüm zamanlar)
+function setPRHTML(e) {
+  const id = e.id, ds = exDays(id), n = Math.min(SETC.length, Math.max(0, ...ds.map(d => Store.sets(d, id).length)));
+  const rows = Array.from({length: n}, (_, i) => {
+    let b = 0, bd = null, lv = null, ld = null;
+    ds.forEach(d => { const v = Store.sets(d, id)[i]; if (v === undefined) return; if (v > b) { b = v; bd = d; } lv = v; ld = d; });
+    return {i, b, bd, lv, ld};
+  }).filter(r => r.bd);
+  return `<div class="card tbl-wrap"><p class="how">Her set sırasının ayrı rekoru. Sadece ilk sete değil, sonraki setlere de hedef koy.</p>
+    <table class="tbl"><thead><tr><th>Set</th><th>Rekor</th><th>Son</th><th>Kalan</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td><span class="rl" style="color:${SETC[r.i]}">● ${r.i + 1}. set</span></td>
+      <td><b class="gold">${fmtU(id, r.b)}</b> <small>${fmtD(r.bd)}</small></td>
+      <td>${fmtU(id, r.lv)} <small>${fmtD(r.ld)}</small></td>
+      <td>${r.lv >= r.b ? '<span class="up">🏆 rekorda</span>' : fmtU(id, r.b - r.lv)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+// toplam hacimde sıradaki eşik
+const MILES_R = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
+const MILES_S = [600, 1800, 3600, 7200, 18000, 36000, 72000, 180000, 360000];
+function milestoneHTML(e) {
+  const id = e.id, t = today(), ds = exDays(id), tot = sum(ds.map(d => total(d, id)));
+  const miles = e.timed ? MILES_S : MILES_R, next = miles.find(m => m > tot), prev = [...miles].reverse().find(m => m <= tot) || 0;
+  const pace = sum(ds.filter(d => d > addDays(t, -14)).map(d => total(d, id))) / 14;
+  if (!next) return `<div class="card"><p class="how">Tüm eşikleri geçtin: toplam <b>${fmtU(id, tot)}</b> 🏆</p></div>`;
+  const p = Math.round((tot - prev) / (next - prev) * 100), eta = pace > 0 ? addDays(t, Math.ceil((next - tot) / pace)) : null;
+  return `<div class="card mile" style="--c:${e.color}"><p class="how">Başladığından beri toplam <b>${fmtU(id, tot)}</b>${prev ? ` · geçtiğin son eşik ${fmtU(id, prev)}` : ''}.</p>
+    <div class="mile-h"><span>Sıradaki: <b>${fmtU(id, next)}</b></span><span>${fmtU(id, next - tot)} kaldı</span></div>
+    <div class="mile-bar"><u style="width:${p}%"></u></div>
+    <p class="how" style="margin-top:8px">${eta ? `Son 14 günün temposuyla (günde ~${fmtU(id, pace)}) <b>${fmtD(eta)}</b> civarı.` : 'Son 14 günde kayıt yok, tahmin yapılamıyor.'}</p></div>`;
+}
+
 // son tamamlanan antrenmanın her setine küçük bir artış ekleyip hedef öner
 function nextTargetHTML(e, last, best) {
   const id = e.id, step = v => e.timed ? Math.max(2, Math.round(v * .05)) : 1;

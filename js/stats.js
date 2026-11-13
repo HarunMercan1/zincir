@@ -190,7 +190,7 @@ function renderExStats(el, e) {
   const w1 = sum7(7, 0), w0 = sum7(14, 7);
   let run = 0, prs = 0; exDays(id).forEach(d => Store.sets(d, id).forEach(v => { if (v > run) { if (run) prs++; run = v; } }));
   const canTrend = done.length >= TREND_MIN;
-  const projN = Math.max(2, Math.min(14, Math.round(cds.length / 3))); // tahmin, verinin süresinin ~üçte biri kadar ileri
+  const projN = 14; // tahmin kaç gün ileri
   const x0 = s[0].d, lr = canTrend ? linreg(done.map(p => [diffDays(x0, p.d), p.tot])) : null;
   const maxSets = Math.min(SETC.length, Math.max(...s.map(x => x.s.length)));
   const posAvg = Array.from({length: maxSets}, (_, i) => avg(s.filter(x => x.s[i] !== undefined).map(x => x.s[i])));
@@ -249,8 +249,15 @@ function renderExStats(el, e) {
     ${tile(drops.length ? '%' + Math.round(avg(drops) * 100) : '—', 'Yorgunluk', 'ilk setten son sete düşüş · azalması iyi')}
   </div></div>
 
+  ${habitHTML(e, done, best)}
+
   <h2>Sıradaki antrenman hedefi</h2>
   ${nextTargetHTML(e, last, best)}
+
+  <div class="grid2">
+    <div><h2>Set rekorları</h2>${setPRHTML(e)}</div>
+    <div><h2>Kilometre taşı</h2>${milestoneHTML(e)}</div>
+  </div>
 
   <h2>Antrenman toplamları</h2>
   <div class="card chc"><p class="how">Her nokta bir antrenmandaki toplam ${e.unit}. ${canTrend ? `Beyaz çizgi son 7 antrenmanın ortalaması, turuncu kesik çizgi gidişata göre ${projN} günlük tahmin.` : `Tahmin çizgisi ${TREND_MIN} antrenmandan sonra çıkacak.`} Sarı nokta en iyi günün.</p>
@@ -296,12 +303,12 @@ function renderExStats(el, e) {
   if (canTrend) ds.push({label: 'Son 7 antrenman ort.', data: ma, borderColor: '#ffffffaa', borderWidth: 2, pointRadius: 0, spanGaps: true, tension: .4},
     {label: 'Tahmin', data: labels.map(d => Math.max(0, +(lr.m * diffDays(x0, d) + lr.b).toFixed(1))), borderColor: '#ff8a1f', borderDash: [6, 6], borderWidth: 2, pointRadius: 0});
   chart('cMain', {type: 'line', data: {labels: labels.map(fmtD), datasets: ds},
-    options: {interaction: {intersect: false, mode: 'index'}, plugins: {legend: {position: 'bottom', display: canTrend}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 12}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
+    options: {interaction: {intersect: false, mode: 'index'}, plugins: {legend: {position: 'bottom', display: canTrend}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 12}}, y: {beginAtZero: false, grace: '15%', title: {display: true, text: e.unit}}}}});
 
   // set sırası bazında: her set kendi renginde
   chart('cPos', {type: 'line', data: {labels: s.map(x => fmtD(x.d)), datasets: posAvg.map((_, i) => ({
     label: `${i + 1}. set`, data: s.map(x => x.s[i] ?? null), borderColor: SETC[i], backgroundColor: SETC[i], tension: .3, spanGaps: true, pointRadius: 4, borderWidth: 3}))},
-    options: {interaction: {intersect: false, mode: 'index'}, plugins: {legend: {position: 'bottom'}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
+    options: {interaction: {intersect: false, mode: 'index'}, plugins: {legend: {position: 'bottom'}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {beginAtZero: false, grace: '10%'}}}});
 
   // yorgunluk: set renkleriyle, tooltip'te düşüş yüzdesi
   chart('cFat', {type: 'bar', data: {labels: posAvg.map((v, i) => i ? [`${i + 1}. set`, `▼ %${Math.round((1 - v / posAvg[0]) * 100)}`] : '1. set'), datasets: [{label: 'Ortalama', data: posAvg.map(v => +v.toFixed(1)),
