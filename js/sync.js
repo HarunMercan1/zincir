@@ -41,7 +41,12 @@ const Sync = {
   // --- giriş: e-posta + şifre ---
   enter(b) {
     // bu cihazdaki kayıtlar başka bir hesabınsa yeni hesaba karışmasın
-    if (b.user && this.st.owner && this.st.owner !== b.user.id) this.wipe();
+    if (b.user) {
+      const foreign = this.st.owner ? this.st.owner !== b.user.id
+        // sahibi bilinmeyen yerel kayıt var: sormadan hesaba aktarma
+        : Object.keys(Store.data).length && !confirm('Bu cihazda hangi hesaba ait olduğu bilinmeyen kayıtlar var.\n\nTamam: bu hesaba aktar\nİptal: sil, sadece bu hesabın verisi gelsin');
+      if (foreign) this.wipe();
+    }
     this.setSession(b);
     this.st.owner = this.st.session.uid;
     this.st.pulled = null; this.st.base = {}; this.keep();   // yeni bağlanan cihaz: önce buluttakini al
