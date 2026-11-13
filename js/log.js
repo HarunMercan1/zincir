@@ -18,6 +18,7 @@ function suggest(id, d) {
 }
 
 function renderLog(el) {
+  if (!EX.some(x => x.id === App.ex)) App.ex = EX[0].id;
   const d = App.day, e = EXM[App.ex], t = today();
   if (Log.val === null) Log.val = suggest(e.id, d);
   const sets = Store.sets(d, e.id), ls = lastSession(e.id, d), prev = ls ? Store.sets(ls, e.id) : [];
@@ -34,7 +35,7 @@ function renderLog(el) {
     </div>
     <button class="nav-day" data-step="1" ${d >= t ? 'disabled' : ''}>›</button>
     <label class="pick">📅<input type="date" id="pickDay" value="${d}" max="${t}"></label>
-    <div class="day-badge ${dayState(d)}">${dayRingSVG(d)}<div><b>${doneCount(d)}/5</b><span>${doneCount(d) === 5 ? 'Altın halka!' : 'hareket'}</span></div></div>
+    <div class="day-badge ${dayState(d)}">${dayRingSVG(d)}<div><b>${doneCount(d)}/${needCount(d)}</b><span>${isFull(d) ? 'Altın halka!' : 'hareket'}</span></div></div>
   </div>
 
   <div class="ex-tabs">
@@ -49,6 +50,7 @@ function renderLog(el) {
         ${xt ? '<span class="ex-ok">✓</span>' : ''}
       </button>`;
     }).join('')}
+    <button class="ex-tab ex-edit" id="exEdit"><span class="ex-ic">⚙️</span><span class="ex-n">Hareketleri düzenle</span><span class="ex-v">＋ ekle</span></button>
   </div>
 
   <div class="log-grid" style="--c:${e.color}">
@@ -139,6 +141,7 @@ function renderLog(el) {
   val.onkeydown = ev => { if (ev.key === 'Enter') saveSet(el); };
   val.onfocus = () => val.select();
   $('#save').onclick = () => saveSet(el);
+  $('#exEdit').onclick = () => openExEditor();
   el.querySelectorAll('.r-x').forEach(b => b.onclick = () => {
     const i = +b.dataset.i, v = Store.removeSet(d, e.id, i);
     renderLog(el);
@@ -160,7 +163,7 @@ function deltaTag(df) {
 }
 
 function dayRingSVG(d) {
-  const p = doneCount(d) / 5, C = 2 * Math.PI * 20;
+  const p = needCount(d) ? doneCount(d) / needCount(d) : 0, C = 2 * Math.PI * 20;
   return `<svg viewBox="0 0 50 50" width="46" height="46"><circle cx="25" cy="25" r="20" fill="none" stroke="#1d2234" stroke-width="6"/>
     <circle cx="25" cy="25" r="20" fill="none" stroke="${p === 1 ? '#ffb340' : '#b8773e'}" stroke-width="6" stroke-linecap="round"
     stroke-dasharray="${C * p} ${C}" transform="rotate(-90 25 25)"/></svg>`;
@@ -170,7 +173,7 @@ function saveSet(el, v) {
   const d = App.day, id = App.ex;
   v = v ?? parseInt(el.querySelector('#val').value, 10);
   if (!(v > 0)) { toast('Önce bir değer gir'); return; }
-  const best = bestEver(id, null), wasDone = doneCount(d);
+  const best = bestEver(id, null), wasFull = isFull(d);
   const x0 = xpInfo(), a0 = ACH.map(a => achState(a).lvl);
   Store.addSet(d, id, v);
   const i = Store.sets(d, id).length - 1;
@@ -186,7 +189,7 @@ function saveSet(el, v) {
   if (x1.L > x0.L) { toast(`⬆ SEVİYE ${x1.L}! ${x1.tier[1]}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
   else if (newAch.length) { const o = newAch[0]; toast(`${o.a.ic} Başarım: ${o.a.name} · ${TIERS[o.l - 1]}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
   else if (v > best && best > 0) { toast(`🏆 YENİ REKOR! ${EXM[id].name}: ${v} ${EXM[id].unit}${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
-  else if (doneCount(d) === 5 && wasDone < 5) { toast(`⛓ 5/5! Bugünün halkası altın oldu.${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
+  else if (isFull(d) && !wasFull) { toast(`⛓ ${needCount(d)}/${needCount(d)}! Bugünün halkası altın oldu.${xpT}`, {label: 'Geri al', fn: undo}); confetti(); }
   else toast(`✓ ${i + 1}. set kaydedildi: ${v} ${EXM[id].unit}${xpT}`, {label: 'Geri al', fn: undo});
   function undo() { Store.removeSet(d, id, i); Log.rest = null; Log.val = v; renderLog(el); }
 }

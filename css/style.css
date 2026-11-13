@@ -520,3 +520,35 @@ body.locked{overflow:hidden}
 .lvl small{display:block}
 .lvl-t{margin-top:3px} .lvl-t .up{color:var(--up)} .lvl-t .down{color:var(--down)}
 .lvl-p{margin-top:6px;padding:6px 8px;border-radius:8px;background:#3a1a1a;color:#f3b0b0 !important}
+
+/* hareketleri düzenle */
+.ex-edit{border-style:dashed !important;--c:var(--mute)}
+.exed{position:fixed;inset:0;z-index:90;background:#000a;display:grid;place-items:center;padding:16px;overflow-y:auto}
+.exed[hidden]{display:none}
+.exed-box{width:100%;max-width:460px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:0 20px 60px #000a;max-height:calc(100vh - 32px);overflow-y:auto}
+.exed-h{display:flex;justify-content:space-between;align-items:center}
+.exed-h b{font-size:18px}
+.exed-x{width:34px;height:34px;border-radius:10px;background:var(--card3)}
+.exed-sub{font-size:13px;margin:4px 0 12px}
+.exed-box h4{margin:18px 0 0;font-size:14px;color:var(--mute)}
+.exed-list{display:flex;flex-direction:column;gap:8px}
+.exr{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--c)}
+.exr-ic{font-size:24px}
+.exr-n{flex:1;min-width:0}
+.exr-n b{display:block}
+.exr-n small{color:var(--mute);font-size:12px}
+.exr button{padding:7px 10px;border-radius:9px;background:var(--card3);font-size:13px;font-weight:600}
+.exr .exr-hide{color:var(--down)}
+.exed-add{width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px dashed var(--line);color:var(--fire2);font-weight:700}
+.exf{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;background:var(--card2);border:1px solid var(--fire);margin-top:8px}
+.exf-row{display:flex;gap:8px}
+.exf input[type=text],.exf input:not([type]){padding:11px 12px;border-radius:10px;background:var(--card3);border:1px solid var(--line);color:var(--text);font:inherit;font-size:16px;min-width:0;flex:1}
+.exf input.exf-ic{flex:0 0 56px;width:56px;text-align:center;font-size:22px}
+.exf-icons{display:flex;flex-wrap:wrap;gap:4px}
+.exf-icons button{width:36px;height:36px;border-radius:9px;background:var(--card3);font-size:18px}
+.exf-unit{display:flex;gap:16px;flex-wrap:wrap;font-size:14px}
+.exf-unit label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.exf-btns{display:flex;gap:8px}
+.exf-ok{flex:1;padding:11px;border-radius:10px;font-weight:800;background:linear-gradient(135deg,var(--fire),#ff9a2a);color:#1a0a00}
+.exf-cancel{padding:11px 14px;border-radius:10px;background:var(--card3)}
+.exf small{font-size:12px}

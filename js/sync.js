@@ -80,7 +80,8 @@ const Sync = {
     if (this.busy) { this.again = true; return; }
     this.busy = true; this.status = 'busy'; this.paint();
     try {
-      const changed = await this.pull();
+      const exChanged = await this.syncEx();
+      const changed = await this.pull() || exChanged;
       await this.push();
       this.status = 'ok'; this.err = null; this.last = new Date();
       if (changed) Store.save();
@@ -110,6 +111,23 @@ const Sync = {
     }
     this.keep();
     return changed;
+  },
+  // hareket listesi: bu cihazda değiştiyse gönder, değilse buluttakini al
+  async syncEx() {
+    if (ExList.dirty) {
+      const at = ExList.at;
+      await this.api('/rest/v1/zincir_meta?on_conflict=user_id', {method: 'POST', body: JSON.stringify([{user_id: this.st.session.uid, ex: EXALL}]),
+        headers: {Prefer: 'resolution=merge-duplicates,return=minimal'}});
+      if (ExList.at === at) { ExList.dirty = false; ExList.save(); }   // gönderirken yeniden değiştiyse bir sonraki turda gider
+      return false;
+    }
+    const rows = await this.api('/rest/v1/zincir_meta?select=ex');
+    const key = l => JSON.stringify(l.map(canon));
+    if (rows.length && Array.isArray(rows[0].ex) && rows[0].ex.length && key(rows[0].ex) !== key(EXALL)) {
+      ExList.apply(rows[0].ex); ExList.save();
+      return true;
+    }
+    return false;
   },
   async push() {
     const days = new Set([...Object.keys(Store.data), ...Object.keys(this.st.base)]);

@@ -10,7 +10,7 @@ function renderBackup(el) {
     <div class="bk-info">
       <span class="bk-ic">${warn ? '⚠️' : '💾'}</span>
       <div><b>${warn ? 'Yedek almanın zamanı geldi' : 'Verin güvende mi?'}</b>
-      <small>Kayıtların ${cloud ? 'bulutta ve bu cihazda' : 'sadece bu tarayıcıda'} duruyor (${days} gün, ${sum(workedDays().map(d => sum(EX.map(e => Store.sets(d, e.id).length))))} set).
+      <small>Kayıtların ${cloud ? 'bulutta ve bu cihazda' : 'sadece bu tarayıcıda'} duruyor (${days} gün, ${sum(workedDays().map(d => sum(EXALL.map(e => Store.sets(d, e.id).length))))} set).
       ${last ? `Son yedek: <b>${ago === 0 ? 'bugün' : ago + ' gün önce'}</b>.` : 'Henüz hiç yedek almadın.'}
       ${cloud ? 'İstersen ayrıca dosya olarak da yedek alabilirsin.' : 'Tarayıcı verisini temizlersen her şey gider; ara sıra yedek indir.'}</small></div>
     </div>
@@ -41,7 +41,7 @@ function validateBackup(o) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return `tarih hatalı: ${d}`;
     if (!r || typeof r !== 'object') return `${d} günü hatalı`;
     for (const [id, s] of Object.entries(r)) {
-      if (!EXM[id]) return `bilinmeyen hareket: ${id}`;
+      if (!/^[a-z0-9_-]{1,40}$/.test(id)) return `bilinmeyen hareket: ${id}`;
       if (!Array.isArray(s) || !s.every(v => Number.isInteger(v) && v > 0)) return `${d} / ${id} setleri hatalı`;
     }
   }

@@ -79,8 +79,8 @@ function chart(canvasId, cfg) { const c = new Chart(document.getElementById(canv
 /* ================= GENEL ================= */
 function renderOverview(el) {
   const days = workedDays().filter(inRange), cds = calDays(), t = today();
-  const reps = sum(days.flatMap(d => ['push', 'sit', 'pull'].flatMap(id => Store.sets(d, id))));
-  const secs = sum(days.flatMap(d => ['hang', 'plank'].flatMap(id => Store.sets(d, id))));
+  const reps = sum(days.flatMap(d => EXALL.filter(e => !e.timed).flatMap(e => Store.sets(d, e.id))));
+  const secs = sum(days.flatMap(d => EXALL.filter(e => e.timed).flatMap(e => Store.sets(d, e.id))));
   const byWd = WD.map((_, i) => days.filter(d => wdIdx(d) === i));
   const topWd = byWd.map((a, i) => [a.length, i]).sort((a, b) => b[0] - a[0])[0];
   const prog = EX.map(e => {
@@ -97,7 +97,7 @@ function renderOverview(el) {
   if (lastD) {
     const chips = EX.map(e => { const a = total(lastD, e.id), b = prevD ? total(prevD, e.id) : 0;
       return a ? `<i class="chip-ex" style="--c:${e.color}">${e.icon} ${fmtU(e.id, a)}${prevD && b ? ' ' + deltaTag(a - b) : ''}</i>` : ''; }).join('');
-    ins.push(['mid', `<b>Son antrenman ${lastD === t ? 'bugün' : ago(lastD)}</b> (${fmtD(lastD)}) · ${doneCount(lastD)}/5 hareket${prevD ? ', öncekine göre:' : ':'}<span class="chips-row">${chips}</span>`]);
+    ins.push(['mid', `<b>Son antrenman ${lastD === t ? 'bugün' : ago(lastD)}</b> (${fmtD(lastD)}) · ${doneCount(lastD)}/${needCount(lastD)} hareket${prevD ? ', öncekine göre:' : ':'}<span class="chips-row">${chips}</span>`]);
   }
   let prCount = 0;
   const prs7 = EX.map(e => { let best = 0, last = null; exDays(e.id).forEach(d => { const m = Math.max(...Store.sets(d, e.id)); if (m > best) { if (best && diffDays(d, t) < 7) { prCount++; last = m; } best = m; } }); return last ? `<b style="color:${e.color}">${e.name}</b> ${fmtU(e.id, last)}` : null; }).filter(Boolean);
@@ -112,7 +112,7 @@ function renderOverview(el) {
   <div class="card insight">${ins.map(([c, h]) => `<p class="ins ${c}">${h}</p>`).join('')}</div>
   <div class="kpis big">
     ${kpi(reps, 'Toplam tekrar', '🔁', 'şınav + mekik + barfiks')}
-    ${kpi(fmtSec(secs), 'Toplam süre', '⏱', 'asılı + plank')}
+    ${kpi(fmtSec(secs), 'Toplam süre', '⏱', 'süreli hareketler')}
     ${kpi(days.length, 'Antrenman günü', '📅', `${cds.length} günde`)}
     ${kpi(WD[topWd[1]], 'En istikrarlı gün', '⭐', `${topWd[0]} antrenman`)}
     ${kpi(bestProg ? '+' + bestProg.p + '%' : '—', 'En çok gelişen', '🚀', bestProg ? bestProg.e.name : '')}
@@ -171,7 +171,7 @@ function renderHeat(el) {
       const d = addDays(first, w * 7 + k);
       if (d > t) { out += '<i class="hc f"></i>'; continue; }
       const c = doneCount(d);
-      out += `<i class="hc${c ? ' l' + c : ''}${d === t ? ' t' : ''}" title="${fmtLong(d)}: ${c}/5 hareket"></i>`;
+      out += `<i class="hc${c ? ' l' + c : ''}${d === t ? ' t' : ''}" title="${fmtLong(d)}: ${c}/${needCount(d)} hareket"></i>`;
     }
     out += '</div>';
   }

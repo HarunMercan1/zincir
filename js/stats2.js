@@ -10,7 +10,7 @@ const dTag = (a, b) => b ? deltaTag(a - b) : '';
 const LEVEL_T = {hang: [20, 45, 90, 150], plank: [30, 60, 120, 240], push: [10, 25, 45, 70], sit: [15, 30, 50, 80], pull: [1, 5, 12, 20]};
 const LEVEL_N = ['Acemi', 'Başlangıç', 'Orta', 'İleri', 'Elit'];
 function levelOf(id) {
-  const best = Math.max(0, ...exDays(id).flatMap(d => Store.sets(d, id))), t = LEVEL_T[id];
+  const best = Math.max(0, ...exDays(id).flatMap(d => Store.sets(d, id))), t = LEVEL_T[id] || (EXM[id].timed ? [20, 45, 90, 150] : [5, 15, 30, 50]);
   const lv = t.filter(x => best >= x).length, lo = lv ? t[lv - 1] : 0, hi = t[lv];
   return {best, lv, hi, p: hi ? (best - lo) / (hi - lo) : 1};
 }
@@ -74,7 +74,7 @@ function powerHTML() {
 function ovExtraHTML(all = workedDays()) {
   const t = today(), cw = addDays(t, -wdIdx(t));
   const weeks = weekList(10).filter((w, i, arr) => all.some(d => inWeek(d, w)) || i === arr.length - 1);
-  const mk = ds => ({n: ds.length, full: ds.filter(d => doneCount(d) === 5).length,
+  const mk = ds => ({n: ds.length, full: ds.filter(isFull).length,
     tot: Object.fromEntries(EX.map(e => [e.id, sum(ds.map(d => total(d, e.id)))]))});
   const rows = weeks.map(w => ({w, ...mk(all.filter(d => inWeek(d, w)))}));
   // bu hafta henüz bitmedi: geçen haftanın aynı noktasıyla kıyasla
@@ -96,7 +96,7 @@ function ovExtraHTML(all = workedDays()) {
   return `
   <h2>Haftalık özet</h2>
   <div class="card tbl-wrap"><p class="how">Her satır bir hafta. Hareket sütunlarında o haftanın toplamı, yanında bir önceki haftaya göre fark (bu hafta için: geçen haftanın aynı noktasına göre). Renk koyulaştıkça o hareketin en iyi haftasına yaklaşıyorsun.</p>
-  <table class="tbl htbl"><thead><tr><th>Hafta</th><th>Gün</th><th>5/5</th>${EX.map(e => `<th style="color:${e.color}">${e.icon} ${e.name}</th>`).join('')}</tr></thead>
+  <table class="tbl htbl"><thead><tr><th>Hafta</th><th>Gün</th><th>Tam</th>${EX.map(e => `<th style="color:${e.color}">${e.icon} ${e.name}</th>`).join('')}</tr></thead>
   <tbody>${[...rows].reverse().map((r, i, arr) => { const p = r.cmp || arr[i + 1]; return `<tr class="${r.w === cw ? 'cur' : ''}">
     <td><b>${wkLabel(r.w)}</b>${r.w === cw ? ' <small>bu hafta</small>' : ''}</td>
     <td>${r.n}<small>/7</small></td><td>${r.full ? '⭐'.repeat(Math.min(r.full, 7)) : '—'}</td>

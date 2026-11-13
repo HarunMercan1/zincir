@@ -17,12 +17,12 @@ function xpInfo() {
   const log = {sets: 0, prs: 0, full: 0, chain: 0};
   for (const d of workedDays()) {
     run = prev && addDays(prev, 1) === d ? run + 1 : 1; prev = d;
-    for (const e of EX) for (const v of Store.sets(d, e.id)) {
+    for (const e of EXALL) for (const v of Store.sets(d, e.id)) {
       xp += XP_RULES.set; log.sets += XP_RULES.set;
       if (best[e.id] && v > best[e.id]) { xp += XP_RULES.pr; log.prs += XP_RULES.pr; }
       best[e.id] = Math.max(best[e.id] || 0, v);
     }
-    if (doneCount(d) === EX.length) { xp += XP_RULES.full; log.full += XP_RULES.full; }
+    if (isFull(d)) { xp += XP_RULES.full; log.full += XP_RULES.full; }
     const cb = Math.min(run, XP_RULES.chainCap) * XP_RULES.chainPerDay; xp += cb; log.chain += cb;
   }
   let L = 1; while (lvlNeed(L + 1) <= xp) L++;
@@ -44,12 +44,12 @@ function levelBadge(info, size = 96) {
 // --- başarımlar ---
 const totalOf = id => sum(Object.keys(Store.data).map(d => total(d, id)));
 const bestOf = id => Math.max(0, ...Object.keys(Store.data).flatMap(d => Store.sets(d, id)));
-const fullDays = () => workedDays().filter(d => doneCount(d) === EX.length).length;
+const fullDays = () => workedDays().filter(isFull).length;
 const TIERS = ['Bronz', 'Gümüş', 'Altın', 'Efsane'];
 
 const ACH = [
   {cat: 'Zincir', ic: '⛓', name: 'Kırılmaz Zincir', desc: 'En uzun zincir', unit: 'gün', val: () => streakInfo().best, t: [7, 30, 100, 365]},
-  {cat: 'Zincir', ic: '✅', name: 'Altın Halka', desc: '5/5 tam gün sayısı', unit: 'gün', val: fullDays, t: [5, 25, 75, 200]},
+  {cat: 'Zincir', ic: '✅', name: 'Altın Halka', desc: 'Tam gün sayısı', unit: 'gün', val: fullDays, t: [5, 25, 75, 200]},
   {cat: 'Zincir', ic: '📅', name: 'Sadakat', desc: 'Toplam antrenman günü', unit: 'gün', val: () => workedDays().length, t: [10, 50, 150, 365]},
   {cat: 'Zincir', ic: '🔁', name: 'Geri Dönüş', desc: 'Kırılan zincirden sonra 7 gün', unit: 'kez', val: () => streakInfo().segs.slice(1).filter(s => s.len >= 7).length, t: [1, 3, 5, 10]},
   {cat: 'Hacim', ic: '💪', name: 'Şınav Makinesi', desc: 'Toplam şınav', unit: 'tekrar', val: () => totalOf('push'), t: [100, 1000, 5000, 20000]},
@@ -62,7 +62,7 @@ const ACH = [
   {cat: 'Güç', ic: '🎯', name: 'Karın Duvarı', desc: 'Tek sette en çok mekik', unit: 'tekrar', val: () => bestOf('sit'), t: [25, 40, 60, 100]},
   {cat: 'Dayanıklılık', ic: '⏱', name: 'Demir Tutuş', desc: 'Tek sette asılı kalma', unit: 'sn', val: () => bestOf('hang'), t: [60, 90, 120, 180]},
   {cat: 'Dayanıklılık', ic: '🗿', name: 'Heykel', desc: 'Tek sette plank', unit: 'sn', val: () => bestOf('plank'), t: [150, 240, 360, 600]},
-  {cat: 'Dayanıklılık', ic: '🔥', name: 'Hacim Canavarı', desc: 'Tek günde set sayısı', unit: 'set', val: () => Math.max(0, ...workedDays().map(d => sum(EX.map(e => Store.sets(d, e.id).length)))), t: [16, 20, 25, 35]},
+  {cat: 'Dayanıklılık', ic: '🔥', name: 'Hacim Canavarı', desc: 'Tek günde set sayısı', unit: 'set', val: () => Math.max(0, ...workedDays().map(d => sum(EXALL.map(e => Store.sets(d, e.id).length)))), t: [16, 20, 25, 35]},
   {cat: 'Dayanıklılık', ic: '⭐', name: 'Seviye Avcısı', desc: 'Ulaşılan seviye', unit: 'seviye', val: () => xpInfo().L, t: [5, 10, 20, 40]},
 ];
 
@@ -92,13 +92,13 @@ function renderAch(el) {
     <div class="xp-split">
       <div><span>Setler</span><b>${info.log.sets}</b></div>
       <div><span>Rekorlar</span><b>${info.log.prs}</b></div>
-      <div><span>5/5 günler</span><b>${info.log.full}</b></div>
+      <div><span>Tam günler</span><b>${info.log.full}</b></div>
       <div><span>Zincir bonusu</span><b>${info.log.chain}</b></div>
       <div class="tot"><span>Toplam XP</span><b>${info.xp}</b></div>
     </div>
   </section>
 
-  <div class="xp-rules muted">XP nasıl kazanılır: her set <b>+${XP_RULES.set}</b> · rekor set <b>+${XP_RULES.pr}</b> · 5/5 tam gün <b>+${XP_RULES.full}</b> · zincirin her günü <b>+${XP_RULES.chainPerDay}×zincir uzunluğu</b> (en çok +${XP_RULES.chainCap * XP_RULES.chainPerDay})</div>
+  <div class="xp-rules muted">XP nasıl kazanılır: her set <b>+${XP_RULES.set}</b> · rekor set <b>+${XP_RULES.pr}</b> · tam gün <b>+${XP_RULES.full}</b> · zincirin her günü <b>+${XP_RULES.chainPerDay}×zincir uzunluğu</b> (en çok +${XP_RULES.chainCap * XP_RULES.chainPerDay})</div>
 
   <h2>Metal yolu</h2>
   <div class="metal-road">${LEVELS.map(t => `<div class="metal ${info.L >= t[0] ? 'on' : ''} ${t === info.tier ? 'cur' : ''}" style="--m1:${t[2]};--m2:${t[3]}">

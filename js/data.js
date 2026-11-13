@@ -1,12 +1,37 @@
 // Veri katmanı: hareketler, kayıt, tarih yardımcıları, zincir hesapları
-const EX = [
-  {id:'hang',  name:'Asılı kalma', unit:'sn',     timed:true, icon:'🪝', color:'#38bdf8'},
-  {id:'plank', name:'Plank',       unit:'sn',     timed:true, icon:'🧱', color:'#a78bfa'},
-  {id:'push',  name:'Şınav',       unit:'tekrar', icon:'💪', color:'#f472b6'},
-  {id:'sit',   name:'Mekik',       unit:'tekrar', icon:'🔄', color:'#34d399'},
-  {id:'pull',  name:'Barfiks',     unit:'tekrar', icon:'🧗', color:'#fbbf24'},
+// Hareket listesi düzenlenebilir. from: tam günde sayılmaya başladığı gün.
+// hid: gizli kaldığı dönemler [[başlangıç, bitiş|null]]; o günlerde tam gün için gerekmez, açık dönem varsa şu an gizli.
+// Kayıtlar silinmez; gizlenen hareketin eski setleri istatistikte ve geçmiş günlerde kalır.
+const EX_DEFAULT = [
+  {id:'hang',  name:'Asılı kalma', unit:'sn',     timed:true, icon:'🪝', color:'#38bdf8', from:'2000-01-01'},
+  {id:'plank', name:'Plank',       unit:'sn',     timed:true, icon:'🧱', color:'#a78bfa', from:'2000-01-01'},
+  {id:'push',  name:'Şınav',       unit:'tekrar', icon:'💪', color:'#f472b6', from:'2000-01-01'},
+  {id:'sit',   name:'Mekik',       unit:'tekrar', icon:'🔄', color:'#34d399', from:'2000-01-01'},
+  {id:'pull',  name:'Barfiks',     unit:'tekrar', icon:'🧗', color:'#fbbf24', from:'2000-01-01'},
 ];
-const EXM = Object.fromEntries(EX.map(e => [e.id, e]));
+const EX_KEY = 'zincir-ex';
+const EXALL = [], EX = [], EXM = {};   // tümü / şu an görünenler / id → hareket (yerinde güncellenir)
+const ExList = {
+  at: 0, dirty: false,   // at: son değişiklik (ms), dirty: buluta gönderilmedi
+  apply(list) {
+    EXALL.splice(0, EXALL.length, ...list);
+    EX.splice(0, EX.length, ...list.filter(e => !exHidden(e)));
+    for (const k in EXM) delete EXM[k];
+    list.forEach(e => EXM[e.id] = e);
+  },
+  load() {
+    let o = null; try { o = JSON.parse(localStorage.getItem(EX_KEY)); } catch (e) {}
+    if (o && Array.isArray(o.list) && o.list.length) { this.at = o.at || 0; this.dirty = !!o.dirty; this.apply(o.list); }
+    else this.apply(JSON.parse(JSON.stringify(EX_DEFAULT)));
+  },
+  save() { if (!DEMO) try { localStorage.setItem(EX_KEY, JSON.stringify({list: EXALL, at: this.at, dirty: this.dirty})); } catch (e) {} },
+  // kullanıcı değiştirdi: kaydet, buluta gönderilecek olarak işaretle
+  set(list) { this.apply(list); this.at = Date.now(); this.dirty = true; this.save(); Store.emit(); },
+};
+// o gün tam gün için gereken hareketler
+const exHidden = e => (e.hid || []).some(g => !g[1]);
+const exOn = d => EXALL.filter(e => e.from <= d && !(e.hid || []).some(([a, b]) => d >= a && (!b || d < b)));
+ExList.load();
 const KEY = 'zincir-v1';
 const DEMO = new URLSearchParams(location.search).has('demo');
 const SEED_KEY = 'zincir-seed-2';
@@ -82,14 +107,16 @@ const Store = {
 
 // --- hesaplar ---
 const total = (d, id) => sum(Store.sets(d, id));
-const doneCount = d => EX.filter(e => Store.sets(d, e.id).length).length;
+const doneCount = d => exOn(d).filter(e => Store.sets(d, e.id).length).length;
+const needCount = d => exOn(d).length;
+const isFull = d => needCount(d) > 0 && doneCount(d) === needCount(d);
 const workedDays = () => Object.keys(Store.data).filter(d => doneCount(d) > 0).sort();
 const exDays = id => workedDays().filter(d => Store.sets(d, id).length);
 const lastSession = (id, before) => exDays(id).filter(d => d < before).pop();
 
 function dayState(d) {
   const c = doneCount(d), t = today();
-  if (c === EX.length) return 'full';
+  if (isFull(d)) return 'full';
   if (c > 0) return 'part';
   if (d === t) return 'today';
   if (d > t) return 'future';

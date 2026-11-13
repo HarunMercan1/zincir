@@ -80,7 +80,7 @@ function chainSVG(days, {labels = true, ex = null, scale = .62} = {}) {
   days.forEach((d, i) => {
     const part = i % 2 === 0 ? faceLink(xs[i], cy, st[i], uid) : sideLink(xs[i], cy, st[i], uid);
     const s = ex ? Store.sets(d, ex.id) : null;
-    const tip = ex ? `${ex.name} · ${s.length ? s.join(' · ') + ` (${ex.timed ? fmtSec(sum(s)) : sum(s) + ' tekrar'})` : 'yapılmadı'}` : `${doneCount(d)}/5 hareket`;
+    const tip = ex ? `${ex.name} · ${s.length ? s.join(' · ') + ` (${ex.timed ? fmtSec(sum(s)) : sum(s) + ' tekrar'})` : 'yapılmadı'}` : `${doneCount(d)}/${needCount(d)} hareket`;
     const wrap = `<g class="lk" data-d="${d}"${ex ? ` data-ex="${ex.id}"` : ''}><title>${fmtLong(d)} · ${tip}</title>${part}</g>`;
     i % 2 === 0 ? faces += wrap : sides += wrap;
     if (labels) {
@@ -143,7 +143,7 @@ function renderChainTab(el) {
 
   <div class="chain-scroll" id="chainScroll">${chainSVG(days)}</div>
   <div class="chain-legend">
-    <span><i class="lg full"></i>5/5 tam gün</span><span><i class="lg part"></i>Eksik gün</span>
+    <span><i class="lg full"></i>Tam gün</span><span><i class="lg part"></i>Eksik gün</span>
     <span><i class="lg miss"></i>Kırık halka</span><span><i class="lg today"></i>Bugün bekliyor</span>
     <span class="muted">Halkaya tıkla → o günü aç</span>
   </div>
@@ -154,7 +154,7 @@ function renderChainTab(el) {
     ${kpi(rate + '%', 'İstikrar oranı', '🎯', `${s.span} günde ${s.days} gün`)}
     ${kpi(s.breaks, 'Kırılma', '💥')}
     ${kpi(avgLen, 'Ort. zincir uzunluğu', '⛓')}
-    ${kpi(workedDays().filter(d => dayState(d) === 'full').length, '5/5 tam gün', '✅')}
+    ${kpi(workedDays().filter(d => dayState(d) === 'full').length, 'Tam gün', '✅')}
   </div>
 
   <h2>Hareket zincirleri</h2>
@@ -219,7 +219,7 @@ function calMonth(m) {
   let cells = WD.map(w => `<div class="cw">${w}</div>`).join('') + '<div></div>'.repeat(off);
   for (let i = 1; i <= n; i++) {
     const d = `${y}-${pad(mo+1)}-${pad(i)}`, st = dayState(d);
-    cells += `<div class="cd ${st}${d === t ? ' is-today' : ''}" data-d="${d}" title="${fmtLong(d)} · ${doneCount(d)}/5"><span>${i}</span>${doneCount(d) && st !== 'full' ? `<em>${doneCount(d)}/5</em>` : ''}</div>`;
+    cells += `<div class="cd ${st}${d === t ? ' is-today' : ''}" data-d="${d}" title="${fmtLong(d)} · ${doneCount(d)}/${needCount(d)}"><span>${i}</span>${doneCount(d) && st !== 'full' ? `<em>${doneCount(d)}/${needCount(d)}</em>` : ''}</div>`;
   }
   return `<div class="card cal"><div class="cal-h">${first.toLocaleDateString('tr-TR', {month:'long', year:'numeric'})}</div><div class="cal-g">${cells}</div></div>`;
 }
@@ -229,9 +229,9 @@ function updateStatus() {
   const s = streakInfo(), t = today();
   if (!s.first) { el.innerHTML = 'İlk halkayı bugün tak.'; return; }
   if (doneCount(t)) {
-    el.innerHTML = doneCount(t) === 5
-      ? '<b>Bugünkü halka altın oldu.</b> 5/5 hareket tamam. 🏆'
-      : `<b>Bugünkü halka takıldı.</b> ${doneCount(t)}/5 hareket. Altın halka için ${5 - doneCount(t)} hareket kaldı.`;
+    el.innerHTML = isFull(t)
+      ? `<b>Bugünkü halka altın oldu.</b> ${needCount(t)}/${needCount(t)} hareket tamam. 🏆`
+      : `<b>Bugünkü halka takıldı.</b> ${doneCount(t)}/${needCount(t)} hareket. Altın halka için ${needCount(t) - doneCount(t)} hareket kaldı.`;
     return;
   }
   if (s.cur > 0) {
