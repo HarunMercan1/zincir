@@ -351,6 +351,8 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .mile-h b{color:var(--c)}
 .mile-bar{height:12px;border-radius:99px;background:var(--card2);overflow:hidden;margin-top:8px}
 .mile-bar u{display:block;height:100%;border-radius:99px;background:var(--c)}
+.mini-mile{min-width:110px}
+.mini-mile .mile-bar{height:8px;margin:0 0 4px}
 .tbl tr:hover td{background:#ffffff05}
 .chips{display:flex;gap:4px}
 .chips i{font-style:normal;background:var(--card3);border-radius:6px;padding:1px 7px;font-weight:700}

@@ -119,6 +119,7 @@ function renderOverview(el) {
     ${kpi(Math.round(days.length / cds.length * 100) + '%', 'Katılım', '🎯', `${cds.length} günün ${days.length}'i`)}
   </div>
 
+  ${exStatusHTML()}
   ${levelHTML()}
   ${powerHTML()}
 
@@ -129,6 +130,11 @@ function renderOverview(el) {
       <div class="pg-v">${x.p === null ? '<span class="muted">az veri</span>' : `<small>${fmtV(x.e.id, x.first)}</small> → <b>${fmtV(x.e.id, x.last)}</b>`}</div>
       <div class="pg-c"><canvas id="sp-${x.e.id}"></canvas></div>
       <small class="muted">günlük toplam ${x.e.unit}</small></div>`).join('')}
+  </div>
+
+  <div class="grid2">
+    <div><h2>Son rekorlar</h2>${recentPRsHTML()}</div>
+    <div><h2>Bu ay · geçen ay</h2>${monthCmpHTML()}</div>
   </div>
 
   ${ovExtraHTML(days)}

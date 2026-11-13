@@ -216,16 +216,67 @@ function setPRHTML(e) {
 // toplam hacimde sıradaki eşik
 const MILES_R = [100, 250, 500, 1000, 2500, 5000, 10000, 25000, 50000, 100000];
 const MILES_S = [600, 1800, 3600, 7200, 18000, 36000, 72000, 180000, 360000];
-function milestoneHTML(e) {
+function mileInfo(e) {
   const id = e.id, t = today(), ds = exDays(id), tot = sum(ds.map(d => total(d, id)));
   const miles = e.timed ? MILES_S : MILES_R, next = miles.find(m => m > tot), prev = [...miles].reverse().find(m => m <= tot) || 0;
   const pace = sum(ds.filter(d => d > addDays(t, -14)).map(d => total(d, id))) / 14;
+  const p = next ? Math.round((tot - prev) / (next - prev) * 100) : 100, eta = next && pace > 0 ? addDays(t, Math.ceil((next - tot) / pace)) : null;
+  return {tot, next, prev, pace, p, eta};
+}
+function milestoneHTML(e) {
+  const id = e.id, {tot, next, prev, pace, p, eta} = mileInfo(e);
   if (!next) return `<div class="card"><p class="how">Tüm eşikleri geçtin: toplam <b>${fmtU(id, tot)}</b> 🏆</p></div>`;
-  const p = Math.round((tot - prev) / (next - prev) * 100), eta = pace > 0 ? addDays(t, Math.ceil((next - tot) / pace)) : null;
   return `<div class="card mile" style="--c:${e.color}"><p class="how">Başladığından beri toplam <b>${fmtU(id, tot)}</b>${prev ? ` · geçtiğin son eşik ${fmtU(id, prev)}` : ''}.</p>
     <div class="mile-h"><span>Sıradaki: <b>${fmtU(id, next)}</b></span><span>${fmtU(id, next - tot)} kaldı</span></div>
     <div class="mile-bar"><u style="width:${p}%"></u></div>
     <p class="how" style="margin-top:8px">${eta ? `Son 14 günün temposuyla (günde ~${fmtU(id, pace)}) <b>${fmtD(eta)}</b> civarı.` : 'Son 14 günde kayıt yok, tahmin yapılamıyor.'}</p></div>`;
+}
+
+/* ---------- GENEL SAYFA: hareket durumu, son rekorlar, aylık kıyas ---------- */
+function exStatusHTML() {
+  const rows = EX.map(e => {
+    const id = e.id, ds = exDays(id); if (!ds.length) return null;
+    const best = Math.max(...ds.flatMap(d => Store.sets(d, id))), lastD = ds[ds.length - 1];
+    const form = Math.round(Math.max(...Store.sets(lastD, id)) / best * 100);
+    return {e, st: exStreakInfo(id), lastD, form, m: mileInfo(e)};
+  }).filter(Boolean);
+  if (!rows.length) return '';
+  const fc = v => v >= 95 ? 'up' : v < 80 ? 'down' : '';
+  return `<h2>Hareket durumu</h2>
+  <div class="card tbl-wrap"><p class="how"><b>Form</b> = son antrenmandaki en iyi setin, rekorunun yüzde kaçı. <b>Kilometre taşı</b> = başlangıçtan beri toplamda sıradaki eşiğe ilerleme.</p>
+  <table class="tbl"><thead><tr><th>Hareket</th><th>Zincir</th><th>Son yapılış</th><th>Form</th><th>Kilometre taşı</th></tr></thead>
+  <tbody>${rows.map(({e, st, lastD, form, m}) => `<tr><td style="color:${e.color}"><span class="rl" style="color:${e.color}">${e.icon} ${e.name}</span></td>
+    <td>${st.cur ? `🔥 ${st.cur} gün` : '<span class="down">kırık</span>'}</td>
+    <td>${ago(lastD)}</td>
+    <td><span class="${fc(form)}">%${form}</span>${form >= 100 ? ' 🏆' : ''}</td>
+    <td>${m.next ? `<div class="mini-mile" style="--c:${e.color}"><div class="mile-bar"><u style="width:${m.p}%"></u></div><small>${fmtU(e.id, m.tot)} / ${fmtU(e.id, m.next)}</small></div>` : '🏆 hepsi'}</td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function recentPRsHTML() {
+  const t = today(), all = EX.flatMap(e => prHistory(e.id).filter(r => r.gain !== null).map(r => ({...r, e}))).sort((a, b) => b.d.localeCompare(a.d)).slice(0, 10);
+  if (!all.length) return `<div class="card"><p class="how">Henüz kırılmış rekor yok. İlk antrenman gününden sonraki her yeni en iyi set burada listelenecek.</p></div>`;
+  return `<div class="card tbl-wrap"><p class="how">Tüm hareketlerde tek sette kırdığın son rekorlar, yeniden eskiye.</p>
+    <table class="tbl"><thead><tr><th>Tarih</th><th>Hareket</th><th>Rekor</th><th>Artış</th></tr></thead>
+    <tbody>${all.map(r => `<tr class="${r.d === t ? 'cur' : ''}"><td>${fmtD(r.d)} <small>${ago(r.d)}</small></td>
+      <td><span class="rl" style="color:${r.e.color}">${r.e.icon} ${r.e.name}</span></td>
+      <td><b class="gold">${fmtU(r.e.id, r.v)}</b></td><td><span class="up">▲ ${fmtV(r.e.id, r.gain)}</span></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+function monthCmpHTML() {
+  const t = today(), ms = t.slice(0, 8) + '01', pms = addDays(ms, -1).slice(0, 8) + '01';
+  const dayN = diffDays(ms, t), pEnd = addDays(pms, dayN) < ms ? addDays(pms, dayN) : addDays(ms, -1);
+  const stat = (a, b) => {
+    const ds = workedDays().filter(d => d >= a && d <= b);
+    const v = timed => sum(ds.flatMap(d => EXALL.filter(e => !!e.timed === timed).flatMap(e => Store.sets(d, e.id))));
+    const prs = EX.reduce((n, e) => n + prHistory(e.id).filter(r => r.gain !== null && r.d >= a && r.d <= b).length, 0);
+    return {n: ds.length, full: ds.filter(isFull).length, reps: v(false), secs: v(true), prs};
+  };
+  const A = stat(pms, pEnd), B = stat(ms, t), has = A.n > 0;
+  const rows = [['Antrenman günü', 'n'], ['Tam gün', 'full'], ['Toplam tekrar', 'reps'], ['Toplam süre', 'secs', fmtSec], ['Kırılan rekor', 'prs']];
+  return `<div class="card tbl-wrap"><p class="how">Bu ayın ilk ${dayN + 1} günü, geçen ayın aynı günleriyle (${fmtD(pms)}–${fmtD(pEnd)}).${has ? '' : ' Geçen ayın bu döneminde kayıt yok.'}</p>
+    <table class="tbl"><thead><tr><th></th><th>Geçen ay</th><th>Bu ay</th><th>Fark</th></tr></thead>
+    <tbody>${rows.map(([l, k, f = x => x]) => `<tr><td><span class="rl">${l}</span></td><td>${has ? f(A[k]) : '—'}</td><td><b>${f(B[k])}</b></td>
+      <td>${has ? (A[k] ? pctTag(pct(B[k], A[k])) : B[k] ? '<span class="up">▲ yeni</span>' : '=') : '—'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 // son tamamlanan antrenmanın her setine küçük bir artış ekleyip hedef öner
