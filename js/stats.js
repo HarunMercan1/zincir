@@ -131,7 +131,6 @@ function renderOverview(el) {
       <small class="muted">günlük toplam ${x.e.unit}</small></div>`).join('')}
   </div>
 
-  <h2>Gelişim radarı</h2><div class="card ch h300"><div class="chi"><canvas id="cRadar"></canvas></div></div>
   ${ovExtraHTML(days)}
   <h2>Aktivite haritası</h2>
   <div class="card"><div class="heat" id="heat"></div>
@@ -145,15 +144,7 @@ function renderOverview(el) {
       options: {plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => fmtU(x.e.id, c.raw)}}}, scales: {x: {display: false}, y: {display: false, min: 0}}, interaction: {intersect: false, mode: 'index'}}});
   });
 
-  // radar: gelişim %
-  const rp = prog.filter(x => x.p !== null);
-  chart('cRadar', {type: 'radar', data: {labels: rp.map(x => x.e.name), datasets: [
-    {label: 'Başlangıç', data: rp.map(() => 100), borderColor: '#3a4058', backgroundColor: '#3a405833', pointRadius: 0, borderDash: [4, 4]},
-    {label: 'Şimdi (başlangıca göre %)', data: rp.map(x => 100 + x.p), borderColor: '#ff8a1f', backgroundColor: '#ff8a1f33', pointBackgroundColor: rp.map(x => x.e.color), pointRadius: 5}]},
-    options: {plugins: {legend: {position: 'bottom'}}, scales: {r: {grid: {color: '#1d2234'}, angleLines: {color: '#1d2234'}, ticks: {display: false}, pointLabels: {color: '#eef1fb', font: {size: 12, weight: 600}}, suggestedMin: 0}}}});
-
   renderHeat(el.querySelector('#heat'));
-  ovExtraCharts(days);
 }
 
 function grad(ctx, color) {
@@ -194,15 +185,13 @@ function renderExStats(el, e) {
   const done = ongoing ? s.slice(0, -1) : s, dtots = done.map(x => x.tot);
   const k = Math.max(1, Math.min(3, Math.floor(done.length / 3)));
   const gro = done.length > 1 ? pct(avg(dtots.slice(-k)), avg(dtots.slice(0, k))) : null;
-  const sd = Math.sqrt(avg(dtots.map(v => (v - avg(dtots)) ** 2)));
-  const consist = dtots.length > 1 ? Math.max(0, Math.round(100 - sd / avg(dtots) * 100)) : null;
   const drops = done.filter(x => x.drop !== null).map(x => x.drop);
   const sum7 = (a, b) => sum(exDays(id).filter(d => d > addDays(t, -a) && d <= addDays(t, -b)).map(d => total(d, id)));
   const w1 = sum7(7, 0), w0 = sum7(14, 7);
   let run = 0, prs = 0; exDays(id).forEach(d => Store.sets(d, id).forEach(v => { if (v > run) { if (run) prs++; run = v; } }));
   const canTrend = done.length >= TREND_MIN;
+  const projN = Math.max(2, Math.min(14, Math.round(cds.length / 3))); // tahmin, verinin süresinin ~üçte biri kadar ileri
   const x0 = s[0].d, lr = canTrend ? linreg(done.map(p => [diffDays(x0, p.d), p.tot])) : null;
-  const proj = lr ? Math.max(0, lr.m * (diffDays(x0, t) + 30) + lr.b) : null;
   const maxSets = Math.min(SETC.length, Math.max(...s.map(x => x.s.length)));
   const posAvg = Array.from({length: maxSets}, (_, i) => avg(s.filter(x => x.s[i] !== undefined).map(x => x.s[i])));
   const last = done[done.length - 1], prev = done[done.length - 2];
@@ -258,13 +247,13 @@ function renderExStats(el, e) {
     ${tile(gro === null ? '—' : (gro >= 0 ? '+' : '') + gro + '%', 'Gelişim', 'ilk antrenmanlara göre son antrenmanlar', cls(gro))}
     ${tile(prs, 'Kırılan rekor', 'tek sette kaç kez rekor kırdın', prs ? 'good' : '')}
     ${tile(drops.length ? '%' + Math.round(avg(drops) * 100) : '—', 'Yorgunluk', 'ilk setten son sete düşüş · azalması iyi')}
-    ${tile(consist === null ? '—' : '%' + consist, 'Tutarlılık', '%100 = her antrenman aynı seviyede')}
-    ${tile(lr ? (lr.m >= 0 ? '+' : '') + U(lr.m) : '—', 'Günlük trend', canTrend ? 'günde ortalama değişim' : `${TREND_MIN} antrenmandan sonra`, lr ? cls(lr.m) : 'off')}
-    ${tile(proj !== null ? U(proj) : '—', '30 gün sonra', canTrend ? 'tahmini antrenman toplamı' : `${TREND_MIN} antrenmandan sonra`, lr ? '' : 'off')}
   </div></div>
 
+  <h2>Sıradaki antrenman hedefi</h2>
+  ${nextTargetHTML(e, last, best)}
+
   <h2>Antrenman toplamları</h2>
-  <div class="card chc"><p class="how">Her nokta bir antrenmandaki toplam ${e.unit}. ${canTrend ? 'Beyaz çizgi son 7 antrenmanın ortalaması, turuncu kesik çizgi gidişata göre 14 günlük tahmin.' : `Tahmin çizgisi ${TREND_MIN} antrenmandan sonra çıkacak.`} Sarı nokta en iyi günün.</p>
+  <div class="card chc"><p class="how">Her nokta bir antrenmandaki toplam ${e.unit}. ${canTrend ? `Beyaz çizgi son 7 antrenmanın ortalaması, turuncu kesik çizgi gidişata göre ${projN} günlük tahmin.` : `Tahmin çizgisi ${TREND_MIN} antrenmandan sonra çıkacak.`} Sarı nokta en iyi günün.</p>
     <div class="ch h300"><div class="chi"><canvas id="cMain"></canvas></div></div></div>
 
   <div class="grid2">
@@ -272,13 +261,13 @@ function renderExStats(el, e) {
       <div class="ch h260"><div class="chi"><canvas id="cPos"></canvas></div></div>
       <div class="setchips">${posAvg.map((_, i) => { const a = done.find(x => x.s[i] !== undefined), b = [...done].reverse().find(x => x.s[i] !== undefined);
         return `<span style="--sc:${SETC[i]}"><i></i>${i + 1}. set ${a && b && a !== b ? `${a.s[i]} → ${b.s[i]} ${deltaTag(b.s[i] - a.s[i])}` : (a ? a.s[i] : '')}</span>`; }).join('')}</div></div></div>
-    <div><h2>Rekor merdiveni</h2><div class="card chc"><p class="how">Çubuk = o günün en iyi seti. <b class="gold">Sarı çubuk</b> = o gün rekor kırıldı, sarı çizgi = o güne kadarki rekor.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cPR"></canvas></div></div></div></div>
+    <div><h2>Rekor geçmişi</h2>${prHistHTML(e)}</div>
   </div>
-  <h2>Yorgunluk eğrisi</h2><div class="card chc"><p class="how">${few(s.length, 3)}Her setin ortalaması. Setler arasında ne kadar düştüğünü gösterir. Düşüş azaldıkça dayanıklılığın artıyor demektir.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cFat"></canvas></div></div></div>
-  <h2>Güç ve dayanıklılık</h2><div class="card chc"><p class="how">Çubuk = ilk setin (güç). Çizgi = sonraki setlerde ilk setin yüzde kaçını koruduğun (dayanıklılık). İkisi birlikte yükseliyorsa hem güçleniyorsun hem dayanıklılığın artıyor.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cPow"></canvas></div></div></div>
+  <div class="grid2">
+    <div><h2>Son antrenmanlar · öncekiler</h2>${recentCmpHTML(e, done)}</div>
+    <div><h2>Yorgunluk eğrisi</h2><div class="card chc"><p class="how">${few(s.length, 3)}Her set sırasının ortalaması. Setler arasındaki düşüş azaldıkça dayanıklılığın artıyor demektir.</p>
+      <div class="ch h260"><div class="chi"><canvas id="cFat"></canvas></div></div></div></div>
+  </div>
 
   <h2>İlk antrenman vs son antrenman</h2>
   <div class="card vs" style="--c:${e.color}">${vsHTML(e, done[0], done[done.length - 1])}${ongoing ? '<p class="muted" style="margin-top:8px;font-size:12px">Bugünkü antrenman devam ettiği için son tamamlanan antrenmanla karşılaştırıldı.</p>' : ''}</div>
@@ -297,7 +286,7 @@ function renderExStats(el, e) {
     }).join('')}</tbody></table></div>`;
 
   // ana grafik: takvim ekseni; tahmin sadece yeterli veri varsa
-  const ext = []; if (canTrend) for (let i = 1; i <= 14; i++) ext.push(addDays(t, i));
+  const ext = []; if (canTrend) for (let i = 1; i <= projN; i++) ext.push(addDays(t, i));
   const labels = [...cds, ...ext];
   const totMap = Object.fromEntries(s.map(x => [x.d, x.tot]));
   const ma = labels.map(d => { if (!canTrend || totMap[d] === undefined || (ongoing && d === t)) return null; const idx = s.findIndex(x => x.d === d), w = s.slice(Math.max(0, idx - 6), idx + 1); return +avg(w.map(x => x.tot)).toFixed(1); });
@@ -314,26 +303,10 @@ function renderExStats(el, e) {
     label: `${i + 1}. set`, data: s.map(x => x.s[i] ?? null), borderColor: SETC[i], backgroundColor: SETC[i], tension: .3, spanGaps: true, pointRadius: 4, borderWidth: 3}))},
     options: {interaction: {intersect: false, mode: 'index'}, plugins: {legend: {position: 'bottom'}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
 
-  // rekor merdiveni: rekor kırılan gün sarı, diğerleri gri
-  let mx = 0; const stair = s.map(x => (mx = Math.max(mx, x.best)));
-  const broke = s.map((x, i) => i > 0 && stair[i] > stair[i - 1]); // ilk gün rekor "kırmak" sayılmaz
-  chart('cPR', {type: 'bar', data: {labels: s.map(x => fmtD(x.d)), datasets: [
-    {type: 'line', label: 'O güne kadarki rekor', data: stair, stepped: true, borderColor: '#ffd166', borderWidth: 3, pointRadius: 0},
-    {label: 'Günün en iyi seti', data: s.map(x => x.best), backgroundColor: broke.map(b => b ? '#ffd166' : '#3a4058'), borderRadius: 6}]},
-    options: {plugins: {legend: {position: 'bottom'}, tooltip: tipLabel(id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
-
   // yorgunluk: set renkleriyle, tooltip'te düşüş yüzdesi
   chart('cFat', {type: 'bar', data: {labels: posAvg.map((v, i) => i ? [`${i + 1}. set`, `▼ %${Math.round((1 - v / posAvg[0]) * 100)}`] : '1. set'), datasets: [{label: 'Ortalama', data: posAvg.map(v => +v.toFixed(1)),
     backgroundColor: posAvg.map((_, i) => SETC[i]), borderRadius: 8}]},
     options: {plugins: {legend: {display: false}}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
-
-  // güç (ilk set) ve dayanıklılık (koruma %)
-  chart('cPow', {type: 'bar', data: {labels: s.map(x => fmtD(x.d)), datasets: [
-    {label: 'İlk set', data: s.map(x => x.s[0]), backgroundColor: alpha(e.color, .55), borderRadius: 6, yAxisID: 'y'},
-    {label: 'Koruma %', data: s.map(x => x.s.length > 1 ? Math.round(avg(x.s.slice(1)) / x.s[0] * 100) : null), type: 'line', borderColor: '#eef1fb', backgroundColor: '#eef1fb', tension: .3, spanGaps: true, pointRadius: 4, yAxisID: 'y1'}]},
-    options: {plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {label: c => c.datasetIndex ? `Koruma: %${c.raw}` : `İlk set: ${fmtU(id, c.raw)}`}}},
-      scales: {x: {grid: {display: false}}, y: {beginAtZero: true, title: {display: true, text: e.unit}}, y1: {position: 'right', min: 0, max: 100, grid: {display: false}, ticks: {callback: v => '%' + v}}}}});
-  exExtraCharts(e, s);
 }
 
 function tile(v, l, sub = '', cls = '') { return `<div class="tile ${cls}"><b>${v}</b><span>${l}</span>${sub ? `<small>${sub}</small>` : ''}</div>`; }

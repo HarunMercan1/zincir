@@ -345,6 +345,8 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--li
 .tbl td{padding:9px 8px;border-bottom:1px solid #ffffff08;white-space:nowrap}
 .tbl td small{color:var(--mute)}
 .tbl td b{color:var(--c);font-family:var(--num);font-size:18px}
+.tbl td .rl{font-weight:600;color:var(--text)}
+.tbl td .rl+small{display:block;font-size:11px}
 .tbl tr:hover td{background:#ffffff05}
 .chips{display:flex;gap:4px}
 .chips i{font-style:normal;background:var(--card3);border-radius:6px;padding:1px 7px;font-weight:700}

@@ -90,9 +90,6 @@ function ovExtraHTML(all = workedDays()) {
     return {e, best, bd, cnt, lastPR, bestDay};
   });
 
-  // hareket × haftanın günü
-  const wdAvg = EX.map(e => WD.map((_, i) => { const ds = exDays(e.id).filter(d => wdIdx(d) === i); return ds.length ? avg(ds.map(d => total(d, e.id))) : 0; }));
-
   return `
   <h2>Haftalık özet</h2>
   <div class="card tbl-wrap"><p class="how">Her satır bir hafta. Hareket sütunlarında o haftanın toplamı, yanında bir önceki haftaya göre fark (bu hafta için: geçen haftanın aynı noktasına göre). Renk koyulaştıkça o hareketin en iyi haftasına yaklaşıyorsun.</p>
@@ -102,39 +99,17 @@ function ovExtraHTML(all = workedDays()) {
     <td>${r.n}<small>/7</small></td><td>${r.full ? '⭐'.repeat(Math.min(r.full, 7)) : '—'}</td>
     ${EX.map(e => `<td style="${heatBg(r.tot[e.id], maxT[e.id], e.color)}"><b>${r.tot[e.id] ? fmtV(e.id, r.tot[e.id]) : '—'}</b> ${p ? dTag(r.tot[e.id], p.tot[e.id]) : ''}</td>`).join('')}</tr>`; }).join('')}</tbody></table></div>
 
-  <div class="grid2">
-    <div><h2>Rekor tablosu</h2><div class="card tbl-wrap"><table class="tbl">
+  <h2>Rekor tablosu</h2><div class="card tbl-wrap"><table class="tbl">
       <thead><tr><th>Hareket</th><th>Rekor set</th><th>En iyi gün</th><th>Kırılan</th><th>Son rekor</th></tr></thead>
       <tbody>${prs.map(p => `<tr><td style="color:${p.e.color}"><b>${p.e.icon} ${p.e.name}</b></td>
         <td><b class="gold">${p.best ? fmtV(p.e.id, p.best) : '—'}</b><small> ${p.bd ? fmtD(p.bd) : ''}</small></td>
         <td>${p.bestDay ? `<b>${fmtV(p.e.id, p.bestDay.v)}</b><small> ${fmtD(p.bestDay.d)}</small>` : '—'}</td>
-        <td>${p.cnt ? p.cnt + ' 🏆' : '—'}</td><td>${p.lastPR ? ago(p.lastPR) : '—'}</td></tr>`).join('')}</tbody></table></div></div>
-    <div><h2>Rekor zaman çizelgesi</h2><div class="card chc"><p class="how">${few(all.length, 3, 'antrenman gün')}Her nokta bir rekor kırılan gün (ilk gün sayılmaz). Boşluklar uzadıkça platoya giriyorsun demektir.</p>
-      <div class="ch h260"><div class="chi"><canvas id="cPRt"></canvas></div></div></div></div>
-  </div>
-
-  <h2>Hangi gün hangi harekette iyisin</h2>
-  <div class="card tbl-wrap"><p class="how">Haftanın günlerine göre ortalama antrenman toplamı. Satırdaki en koyu hücre o hareket için en verimli günün.</p>
-  <table class="tbl htbl"><thead><tr><th></th>${WD.map(w => `<th>${w}</th>`).join('')}<th>En iyi</th></tr></thead>
-  <tbody>${EX.map((e, i) => { const mx = Math.max(1, ...wdAvg[i]), bi = wdAvg[i].indexOf(Math.max(...wdAvg[i])); return `<tr><td style="color:${e.color}"><b>${e.icon} ${e.name}</b></td>
-    ${wdAvg[i].map(v => `<td style="${heatBg(v, mx, e.color)}">${v ? fmtV(e.id, v) : '·'}</td>`).join('')}<td><b>${wdAvg[i][bi] ? WD[bi] : '—'}</b></td></tr>`; }).join('')}</tbody></table></div>`;
-}
-
-function ovExtraCharts(all = workedDays()) {
-  if (!all.length) return;
-  const f = all[0], t = today(), span = diffDays(f, t);
-  // rekor zaman çizelgesi
-  const pts = EX.flatMap((e, i) => { let best = 0; const out = []; exDays(e.id).forEach(d => { const m = Math.max(...Store.sets(d, e.id)); if (m > best) { if (best) out.push({x: diffDays(f, d), y: i, v: m}); best = m; } }); return out.map(p => ({...p, e})); });
-  chart('cPRt', {type: 'scatter', data: {datasets: EX.map((e, i) => ({label: e.name, data: pts.filter(p => p.y === i), backgroundColor: e.color, pointRadius: 7, pointHoverRadius: 9, pointStyle: 'rectRot'}))},
-    options: {plugins: {legend: {display: false}, tooltip: {callbacks: {label: c => `${c.raw.e.name}: ${c.raw.v} ${c.raw.e.unit} · ${fmtD(addDays(f, c.raw.x))}`}}},
-      scales: {x: {min: 0, max: Math.max(span, 7), ticks: {callback: v => fmtD(addDays(f, Math.round(v))), maxTicksLimit: 8}, grid: {display: false}},
-        y: {min: -.5, max: EX.length - .5, afterBuildTicks: sc => { sc.ticks = EX.map((_, i) => ({value: i})); }, ticks: {callback: v => EX[v] ? EX[v].icon + ' ' + EX[v].name : ''}, grid: {color: '#1a1f30'}}}}});
+        <td>${p.cnt ? p.cnt + ' 🏆' : '—'}</td><td>${p.lastPR ? ago(p.lastPR) : '—'}</td></tr>`).join('')}</tbody></table></div>`;
 }
 
 /* ---------- HAREKET DETAYI EKLERİ ---------- */
 function exExtraHTML(e, s) {
-  const id = e.id, best = Math.max(...s.flatMap(x => x.s)), maxSets = Math.max(...s.map(x => x.s.length));
-  const last = [...s].slice(-20);
+  const id = e.id, best = Math.max(...s.flatMap(x => x.s));
   // dinlenme etkisi
   const buckets = {1: [], 2: [], 3: []};
   s.forEach((x, i) => { if (!i) return; const g = Math.min(3, diffDays(s[i - 1].d, x.d)); buckets[g].push(x); });
@@ -145,37 +120,65 @@ function exExtraHTML(e, s) {
   const wRows = weeks.map(w => { const xs = s.filter(x => inWeek(x.d, w)); return {w, n: xs.length, tot: sum(xs.map(x => x.tot)), avg: avg(xs.map(x => x.tot)), best: Math.max(...xs.map(x => x.best))}; });
 
   return `
-  <h2>Set ısı tablosu</h2>
-  <div class="card tbl-wrap"><p class="how">Her satır bir antrenman, her sütun bir set. Renk koyulaştıkça rekora yaklaşıyor. Yatayda sönmeyi, dikeyde gelişmeyi görürsün.</p>
-  <table class="tbl htbl"><thead><tr><th>Tarih</th>${Array.from({length: maxSets}, (_, i) => `<th style="color:${SETC[i] || '#888'}">${i + 1}. set</th>`).join('')}<th>Toplam</th><th>Fark</th></tr></thead>
-  <tbody>${[...last].reverse().map((x, i, arr) => { const p = arr[i + 1]; return `<tr><td><b>${fmtD(x.d)}</b> <small>${WD[wdIdx(x.d)]}</small></td>
-    ${Array.from({length: maxSets}, (_, j) => x.s[j] === undefined ? '<td style="color:#2a3047">·</td>' : `<td style="${heatBg(x.s[j], best, e.color)}">${x.s[j]}${x.s[j] === best ? ' 🏆' : ''}</td>`).join('')}
-    <td><b>${fmtV(id, x.tot)}</b></td><td>${p ? deltaTag(x.tot - p.tot) : ''}</td></tr>`; }).join('')}</tbody></table></div>
-
   <div class="grid2">
-    <div><h2>Haftanın günleri</h2><div class="card chc"><p class="how">${few(s.length, 7)}Günlere göre ortalama antrenman toplamı. Hangi gün daha güçlüsün?</p>
-      <div class="ch h240"><div class="chi"><canvas id="cExWd"></canvas></div></div></div></div>
     <div><h2>Dinlenme etkisi</h2><div class="card tbl-wrap"><p class="how">${few(s.length, 6)}Bir önceki antrenmandan kaç gün sonra yapınca daha iyi gidiyor?${bBest ? ` Şu an en verimlisi: <b style="color:${e.color}">${bBest.l.toLowerCase()}</b>.` : ''}</p>
       <table class="tbl"><thead><tr><th>Ara</th><th>Antrenman</th><th>Ort. toplam</th><th>Ort. en iyi set</th></tr></thead>
       <tbody>${bRows.map(r => `<tr class="${r === bBest ? 'cur' : ''}"><td><b>${r.l}</b></td><td>${r.n || '—'}</td><td>${r.n ? `<b>${fmtV(id, r.tot)}</b>` : '—'}</td><td>${r.n ? fmtV(id, r.best) : '—'}</td></tr>`).join('')}</tbody></table></div></div>
-  </div>
-
-  <div class="grid2">
     <div><h2>Haftalık gelişim</h2><div class="card tbl-wrap"><table class="tbl">
       <thead><tr><th>Hafta</th><th>Antr.</th><th>Toplam</th><th>Ort.</th><th>En iyi set</th></tr></thead>
       <tbody>${[...wRows].reverse().map((r, i, arr) => { const p = arr[i + 1]; return `<tr class="${i === 0 ? 'cur' : ''}"><td><b>${wkLabel(r.w)}</b></td><td>${r.n}</td>
         <td><b>${fmtV(id, r.tot)}</b> ${p ? dTag(r.tot, p.tot) : ''}</td><td>${fmtV(id, r.avg)}</td><td>${r.best}${r.best === best ? ' 🏆' : ''} ${p ? dTag(r.best, p.best) : ''}</td></tr>`; }).join('')}</tbody></table></div></div>
-    <div><h2>Birikimli toplam</h2><div class="card chc"><p class="how">Başlangıçtan bu yana toplam ${e.unit}.</p>
-      <div class="ch h240"><div class="chi"><canvas id="cExCum"></canvas></div></div></div></div>
   </div>`;
 }
 
-function exExtraCharts(e, s) {
-  const wd = WD.map((_, i) => { const xs = s.filter(x => wdIdx(x.d) === i); return xs.length ? +avg(xs.map(x => x.tot)).toFixed(1) : 0; });
-  const mx = Math.max(...wd);
-  chart('cExWd', {type: 'bar', data: {labels: WD, datasets: [{label: 'Ort. toplam', data: wd, backgroundColor: wd.map(v => v === mx ? e.color : alpha(e.color, .4)), borderRadius: 6}]},
-    options: {plugins: {legend: {display: false}, tooltip: tipLabel(e.id)}, scales: {x: {grid: {display: false}}, y: {min: 0, title: {display: true, text: e.unit}}}}});
-  let acc = 0;
-  chart('cExCum', {type: 'line', data: {labels: s.map(x => fmtD(x.d)), datasets: [{label: 'Birikimli', data: s.map(x => acc += x.tot), borderColor: e.color, backgroundColor: ctx => grad(ctx, e.color), fill: true, tension: .2, pointRadius: 3, borderWidth: 2.5}]},
-    options: {interaction: {mode: 'index', intersect: false}, plugins: {legend: {display: false}, tooltip: tipLabel(e.id)}, scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 8}}, y: {min: 0}}}});
+/* ---------- YENİ: rekor geçmişi, son antrenmanlar kıyası, sıradaki hedef ---------- */
+// tek setteki rekorun tüm zamanlar boyunca kırıldığı günler (ilk gün = başlangıç)
+function prHistory(id) {
+  let best = 0, prevD = null; const out = [];
+  exDays(id).forEach(d => { const m = Math.max(...Store.sets(d, id)); if (m > best) { out.push({d, v: m, gain: best ? m - best : null, gap: prevD ? diffDays(prevD, d) : null}); best = m; prevD = d; } });
+  return out;
+}
+
+function prHistHTML(e) {
+  const h = prHistory(e.id), id = e.id, t = today();
+  if (!h.length) return '';
+  const lastPR = h[h.length - 1], rows = h.slice(-8).reverse();
+  return `<div class="card tbl-wrap"><p class="how">Tek sette rekorunu kırdığın her gün. Son rekor <b>${ago(lastPR.d)}</b>${h.length > 1 ? `, ilk günden bu yana <b class="up">${signed(lastPR.v - h[0].v, v => fmtU(id, v))}</b>` : ''}.</p>
+    <table class="tbl"><thead><tr><th>Tarih</th><th>Rekor set</th><th>Artış</th><th>Arada</th></tr></thead>
+    <tbody>${rows.map(r => `<tr class="${r === lastPR ? 'cur' : ''}"><td><b>${fmtD(r.d)}</b> <small>${WD[wdIdx(r.d)]}</small></td>
+      <td><b class="gold">${fmtU(id, r.v)}</b></td>
+      <td>${r.gain === null ? '<span class="muted">başlangıç</span>' : `<span class="up">▲ ${fmtV(id, r.gain)}</span>`}</td>
+      <td>${r.gap === null ? '—' : r.gap + ' gün'}</td></tr>`).join('')}</tbody></table>
+    ${diffDays(lastPR.d, t) >= 7 ? `<p class="how" style="margin-top:8px">⚠ ${diffDays(lastPR.d, t)} gündür rekor yok.</p>` : ''}</div>`;
+}
+
+// son k antrenman ile ondan önceki k antrenmanı yan yana koyar
+function recentCmpHTML(e, done) {
+  const id = e.id, n = done.length;
+  if (n < 4) return `<div class="card"><p class="how">Karşılaştırma için en az 4 tamamlanmış antrenman gerekiyor (şu an ${n}).</p></div>`;
+  const k = Math.min(5, Math.floor(n / 2)), A = done.slice(-2 * k, -k), B = done.slice(-k);
+  const m = (xs, f) => avg(xs.map(f));
+  const drop = x => x.s.length > 1 ? (1 - x.s[x.s.length - 1] / x.s[0]) * 100 : null;
+  const dropAvg = xs => { const v = xs.map(drop).filter(x => x !== null); return v.length ? avg(v) : null; };
+  const rows = [
+    ['İlk set', m(A, x => x.s[0]), m(B, x => x.s[0]), 'dinçken ne yapabildiğin'],
+    ['En iyi set', m(A, x => x.best), m(B, x => x.best), ''],
+    ['Antrenman toplamı', m(A, x => x.tot), m(B, x => x.tot), ''],
+    ['Set sayısı', m(A, x => x.s.length), m(B, x => x.s.length), '', true],
+  ];
+  const dA = dropAvg(A), dB = dropAvg(B);
+  return `<div class="card tbl-wrap"><p class="how">Son <b>${k}</b> antrenmanın ortalaması, ondan önceki ${k} antrenmanla kıyaslandı. Tek tek günlerin iniş çıkışı yerine gerçek yönü gösterir.</p>
+    <table class="tbl"><thead><tr><th></th><th>Önceki</th><th>Son</th><th>Fark</th></tr></thead>
+    <tbody>${rows.map(([l, a, b, sub, plain]) => `<tr><td><span class="rl">${l}</span>${sub ? ` <small>${sub}</small>` : ''}</td>
+      <td>${plain ? a.toFixed(1) : fmtU(id, a)}</td><td><b>${plain ? b.toFixed(1) : fmtU(id, b)}</b></td><td>${pctTag(pct(b, a))}</td></tr>`).join('')}
+    ${dA !== null && dB !== null ? `<tr><td><span class="rl">Setler arası düşüş</span> <small>azalması iyi</small></td><td>%${Math.round(dA)}</td><td><b>%${Math.round(dB)}</b></td>
+      <td><span class="${dB <= dA ? 'up' : 'down'}">${dB <= dA ? '▲' : '▼'} ${Math.abs(Math.round(dB - dA))} puan</span></td></tr>` : ''}</tbody></table></div>`;
+}
+
+// son tamamlanan antrenmanın her setine küçük bir artış ekleyip hedef öner
+function nextTargetHTML(e, last, best) {
+  const id = e.id, step = v => e.timed ? Math.max(2, Math.round(v * .05)) : 1;
+  const tg = last.s.map(v => v + step(v)), tot = sum(tg);
+  return `<div class="card nxt" style="--c:${e.color}"><p class="how">Son antrenmanın (${fmtD(last.d)}) her setine ${e.timed ? 'yaklaşık %5' : '1 tekrar'} eklendi. Hepsini tutturursan toplam <b>${fmtU(id, tot)}</b> (${signed(tot - last.tot, v => fmtU(id, v))}).</p>
+    <div class="setchips">${tg.map((v, i) => `<span style="--sc:${SETC[i] || '#888'}"><i></i>${i + 1}. set <b>${fmtV(id, v)}</b> <small class="muted">(${fmtV(id, last.s[i])})</small>${v > best ? ' 🏆' : ''}</span>`).join('')}</div></div>`;
 }
