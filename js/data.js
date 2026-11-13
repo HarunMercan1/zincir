@@ -81,9 +81,7 @@ const Store = {
     let raw = null, seeded = false;
     try { raw = localStorage.getItem(KEY); seeded = !!localStorage.getItem(SEED_KEY); } catch (e) {}
     this.data = raw ? JSON.parse(raw) : {};
-    // başlangıç günlerini bir kez ekle; o güne zaten kayıt varsa dokunma
-    if (!seeded) for (const [d, r] of Object.entries(SEED)) if (!this.data[d]) this.data[d] = JSON.parse(JSON.stringify(r));
-    try { localStorage.setItem(SEED_KEY, '1'); } catch (e) {}
+    // (eskiden burada sahibinin başlangıç günleri herkese ekleniyordu; kaldırıldı)
     this.save();
   },
   save() { if (!DEMO) try { localStorage.setItem(KEY, JSON.stringify(this.data)); } catch (e) {} },

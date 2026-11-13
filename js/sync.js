@@ -40,9 +40,17 @@ const Sync = {
 
   // --- giriş: e-posta + şifre ---
   enter(b) {
+    // bu cihazdaki kayıtlar başka bir hesabınsa yeni hesaba karışmasın
+    if (b.user && this.st.owner && this.st.owner !== b.user.id) this.wipe();
     this.setSession(b);
+    this.st.owner = this.st.session.uid;
     this.st.pulled = null; this.st.base = {}; this.keep();   // yeni bağlanan cihaz: önce buluttakini al
-    hideAuth(); this.run();
+    hideAuth(); render(); this.run();
+  },
+  // bu cihazdaki yerel kayıtları ve hareket listesini sıfırla (bulut etkilenmez)
+  wipe() {
+    Store.data = {}; Store.save();
+    ExList.apply(JSON.parse(JSON.stringify(EX_DEFAULT))); ExList.at = 0; ExList.dirty = false; ExList.save();
   },
   async login(email, password) {
     this.enter(await this.api('/auth/v1/token?grant_type=password', {method: 'POST', body: JSON.stringify({email, password})}, false));
@@ -67,11 +75,17 @@ const Sync = {
       const at = h.get('access_token');
       const user = await (await fetch(SB_URL + '/auth/v1/user', {headers: {apikey: SB_KEY, Authorization: 'Bearer ' + at}})).json();
       this.setSession({access_token: at, refresh_token: h.get('refresh_token'), expires_in: +h.get('expires_in') || 3600, user});
+      if (this.st.owner && this.st.owner !== this.st.session.uid) this.wipe();
+      this.st.owner = this.st.session.uid;
       this.st.pulled = null; this.st.base = {}; this.keep();
       if (h.get('type') === 'recovery') this.recovering = true;
     } catch (e) { this.linkErr = e.message; }
   },
-  logout() { this.st = {session: null, pulled: null, base: {}}; this.keep(); this.status = 'off'; this.paint(); showAuth(); },
+  // clean: bilinçli çıkış → bu cihazdaki kayıtlar silinir (bulutta duruyor); oturum düştüyse silinmez, sahip hatırlanır
+  logout(clean = false) {
+    const owner = clean ? undefined : this.st.owner;
+    if (clean) this.wipe();
+    this.st = {session: null, pulled: null, base: {}, owner}; this.keep(); this.status = 'off'; this.paint(); showAuth(); },
 
   // --- eşitleme ---
   schedule(ms = 800) { if (!this.on) return; clearTimeout(this.timer); this.timer = setTimeout(() => { this.timer = null; this.run(); }, ms); },
@@ -164,7 +178,13 @@ function renderAcct() {
   el.querySelector('#acctBtn').onclick = e => { e.stopPropagation(); acctOpen = !acctOpen; renderAcct(); };
   el.querySelector('.acct-menu').onclick = e => e.stopPropagation();
   el.querySelector('#syNow').onclick = () => Sync.run();
-  el.querySelector('#syOut').onclick = () => { if (confirm('Bu cihazda hesaptan çıkılsın mı?')) { acctOpen = false; Sync.logout(); } };
+  el.querySelector('#syOut').onclick = async () => {
+    if (!confirm('Bu cihazda hesaptan çıkılsın mı? Kayıtların hesabında kalır, bu cihazdan silinir.')) return;
+    acctOpen = false;
+    await Sync.run();   // bekleyen kayıtları önce gönder
+    if (Sync.status !== 'ok' && !confirm('Son kayıtlar buluta gönderilemedi (' + (Sync.err || 'bağlantı yok') + '). Yine de çıkılsın mı? Gönderilmemişler kaybolur.')) { Sync.paint(); return; }
+    Sync.logout(true); render();
+  };
 }
 document.addEventListener('click', () => { if (acctOpen) { acctOpen = false; renderAcct(); } });
 
