@@ -12,6 +12,27 @@ if (window.Chart) {
   Chart.defaults.plugins.tooltip.borderColor = '#2a3047';
   Chart.defaults.plugins.tooltip.borderWidth = 1;
   Chart.defaults.plugins.tooltip.padding = 10;
+  // Parmağın altında grafiği kapatmasın: bilgi kartı yerine grafiğin üstünde sabit bir şerit
+  Chart.defaults.plugins.tooltip.enabled = false;
+  Chart.defaults.plugins.tooltip.external = ({chart, tooltip}) => {
+    const host = chart.canvas.parentNode;
+    let bar = host.previousElementSibling;
+    if (!bar || !bar.classList.contains('chart-info')) {
+      bar = document.createElement('div');
+      bar.className = 'chart-info';
+      bar.style.cssText = 'min-height:3.2em;margin:0 0 6px;padding:6px 10px;border:1px solid #2a3047;border-radius:8px;background:#1d2234;font-size:12px;line-height:1.35;color:#8790ad';
+      bar.textContent = 'Ayrıntı için grafiğe dokun';
+      host.parentNode.insertBefore(bar, host);
+    }
+    if (tooltip.opacity === 0 || !tooltip.body) return;
+    const esc = s => String(s).replace(/[&<>]/g, ch => ({'&': '&amp;', '<': '&lt;', '>': '&gt;'}[ch]));
+    const rows = tooltip.body.map((b, i) => {
+      const col = tooltip.labelColors[i];
+      const bg = col && col.backgroundColor && typeof col.backgroundColor === 'string' ? col.backgroundColor : '#8790ad';
+      return `<span style="display:inline-block;margin-right:10px;white-space:nowrap"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${bg};margin-right:4px"></i>${esc(b.lines.join(' '))}</span>`;
+    }).join('');
+    bar.innerHTML = `<b style="color:#e8ebf5">${esc((tooltip.title || []).join(' '))}</b><br>${rows}`;
+  };
   Chart.defaults.maintainAspectRatio = false;
 }
 
